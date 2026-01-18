@@ -4,19 +4,39 @@
 export interface Sprite {
     id: string;
     name: string;
-    status: 'running' | 'stopped' | 'creating' | 'error';
-    createdAt: string;
-    updatedAt: string;
+    organization: string;
+    url: string;
+    url_settings: {
+        auth?: 'sprite' | 'public';
+    };
+    status: 'cold' | 'warm' | 'running';
+    created_at: string;
+    updated_at: string;
+}
+/**
+ * Sprite entry from list response
+ */
+export interface SpriteEntry {
+    name: string;
+    org_slug: string;
+    updated_at?: string;
+}
+/**
+ * List sprites response
+ */
+export interface ListSpritesResponse {
+    sprites: SpriteEntry[];
+    has_more: boolean;
+    next_continuation_token?: string;
 }
 /**
  * Represents a checkpoint for a Sprite
  */
 export interface Checkpoint {
     id: string;
-    spriteId: string;
+    create_time: string;
+    source_id?: string;
     comment?: string;
-    createdAt: string;
-    size?: number;
 }
 /**
  * Parsed checkpoint metadata from comment

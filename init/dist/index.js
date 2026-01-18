@@ -30008,17 +30008,15 @@ class SpritesClient {
         return response;
     }
     /**
-     * Get a sprite by name
+     * Get a sprite by name using GET /v1/sprites/{name}
      */
     async getSpriteByName(name) {
         try {
-            const sprites = await this.request({
+            const sprite = await this.request({
                 method: 'GET',
-                path: `/sprites?prefix=${encodeURIComponent(name)}`,
+                path: `/sprites/${encodeURIComponent(name)}`,
             });
-            // Filter to exact match since prefix can return multiple results
-            const exactMatch = sprites.find(s => s.name === name);
-            return exactMatch || null;
+            return sprite;
         }
         catch (error) {
             if (error.status === 404) {
@@ -30055,12 +30053,12 @@ class SpritesClient {
         });
     }
     /**
-     * Create a new checkpoint
+     * Create a new checkpoint using POST /v1/sprites/{name}/checkpoint
      */
     async createCheckpoint(options) {
         const response = await this.request({
             method: 'POST',
-            path: `/sprites/${options.spriteId}/checkpoints`,
+            path: `/sprites/${options.spriteId}/checkpoint`,
             body: { comment: options.comment },
         });
         core.info(`Created checkpoint: ${response.id}`);
@@ -30271,7 +30269,7 @@ class SpritesClient {
     async listSprites(namePrefix) {
         let path = '/sprites';
         if (namePrefix) {
-            path += `?namePrefix=${encodeURIComponent(namePrefix)}`;
+            path += `?prefix=${encodeURIComponent(namePrefix)}`;
         }
         return this.request({
             method: 'GET',
@@ -30446,7 +30444,7 @@ function findCheckpointForStep(checkpoints, runId, jobKey, stepKey) {
  */
 function findLastCheckpointForJob(checkpoints, runId, jobKey) {
     // Sort by creation time descending
-    const sorted = [...checkpoints].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sorted = [...checkpoints].sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime());
     for (const checkpoint of sorted) {
         const metadata = parseCheckpointComment(checkpoint.comment);
         if (metadata && metadata.runId === runId && metadata.jobKey === jobKey) {

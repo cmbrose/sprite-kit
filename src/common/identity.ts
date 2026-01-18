@@ -138,13 +138,13 @@ export function findCheckpointForStep(
  * Find the last successful checkpoint for a job in the current run
  */
 export function findLastCheckpointForJob(
-  checkpoints: Array<{ id: string; comment?: string; createdAt: string }>,
+  checkpoints: Array<{ id: string; comment?: string; create_time: string }>,
   runId: string,
   jobKey: string
 ): string | null {
   // Sort by creation time descending
   const sorted = [...checkpoints].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime()
   );
 
   for (const checkpoint of sorted) {

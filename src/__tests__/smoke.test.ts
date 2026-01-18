@@ -34,19 +34,21 @@ function createMockSprite(id: string, name: string): Sprite {
   return {
     id,
     name,
+    organization: 'test-org',
+    url: `https://${name}.sprites.app`,
+    url_settings: { auth: 'sprite' },
     status: 'running',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
   };
 }
 
 // Helper to create a mock checkpoint
-function createMockCheckpoint(id: string, spriteId: string, comment: string, createdAt: string): Checkpoint {
+function createMockCheckpoint(id: string, comment: string, create_time: string): Checkpoint {
   return {
     id,
-    spriteId,
     comment,
-    createdAt,
+    create_time,
   };
 }
 

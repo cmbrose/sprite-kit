@@ -46,14 +46,17 @@ describe('SpritesClient', () => {
       const existingSprite = {
         id: 'sprite-123',
         name: 'my-sprite',
-        status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        organization: 'test-org',
+        url: 'https://my-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
+        status: 'running' as const,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
-        .get('/sprites?prefix=my-sprite')
-        .reply(200, [existingSprite]);
+        .get('/sprites/my-sprite')
+        .reply(200, existingSprite);
 
       const client = new SpritesClient(TOKEN);
       const result = await client.createOrGetSprite({ name: 'my-sprite' });
@@ -66,14 +69,17 @@ describe('SpritesClient', () => {
       const newSprite = {
         id: 'sprite-456',
         name: 'new-sprite',
-        status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        organization: 'test-org',
+        url: 'https://new-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
+        status: 'running' as const,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
-        .get('/sprites?prefix=new-sprite')
-        .reply(200, []);
+        .get('/sprites/new-sprite')
+        .reply(404, { message: 'Not found' });
 
       nock(API_URL)
         .post('/sprites', { name: 'new-sprite' })
@@ -90,13 +96,16 @@ describe('SpritesClient', () => {
       const newSprite = {
         id: 'sprite-789',
         name: 'another-sprite',
-        status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        organization: 'test-org',
+        url: 'https://another-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
+        status: 'running' as const,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
-        .get('/sprites?prefix=another-sprite')
+        .get('/sprites/another-sprite')
         .reply(404, { message: 'Not found' });
 
       nock(API_URL)
@@ -115,14 +124,17 @@ describe('SpritesClient', () => {
       const sprite = {
         id: 'sprite-123',
         name: 'test-sprite',
-        status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        organization: 'test-org',
+        url: 'https://test-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
+        status: 'running' as const,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
-        .get('/sprites?prefix=test-sprite')
-        .reply(200, [sprite]);
+        .get('/sprites/test-sprite')
+        .reply(200, sprite);
 
       const client = new SpritesClient(TOKEN);
       const result = await client.getSpriteByName('test-sprite');
@@ -132,8 +144,8 @@ describe('SpritesClient', () => {
 
     it('should return null when no sprites found', async () => {
       nock(API_URL)
-        .get('/sprites?prefix=nonexistent')
-        .reply(200, []);
+        .get('/sprites/nonexistent')
+        .reply(404, { message: 'Not found' });
 
       const client = new SpritesClient(TOKEN);
       const result = await client.getSpriteByName('nonexistent');
@@ -143,7 +155,7 @@ describe('SpritesClient', () => {
 
     it('should return null on 404', async () => {
       nock(API_URL)
-        .get('/sprites?prefix=missing')
+        .get('/sprites/missing')
         .reply(404, { message: 'Not found' });
 
       const client = new SpritesClient(TOKEN);
@@ -159,8 +171,8 @@ describe('SpritesClient', () => {
         id: 'sprite-123',
         name: 'test-sprite',
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
@@ -189,8 +201,8 @@ describe('SpritesClient', () => {
   describe('listCheckpoints', () => {
     it('should return list of checkpoints', async () => {
       const checkpoints = [
-        { id: 'cp-1', spriteId: 'sprite-123', comment: 'ghrun=1;job=build;step=install', createdAt: '2024-01-01T00:00:00Z' },
-        { id: 'cp-2', spriteId: 'sprite-123', comment: 'ghrun=1;job=build;step=build', createdAt: '2024-01-01T01:00:00Z' },
+        { id: 'cp-1', spriteId: 'sprite-123', comment: 'ghrun=1;job=build;step=install', created_at: '2024-01-01T00:00:00Z' },
+        { id: 'cp-2', spriteId: 'sprite-123', comment: 'ghrun=1;job=build;step=build', created_at: '2024-01-01T01:00:00Z' },
       ];
 
       nock(API_URL)
@@ -219,9 +231,8 @@ describe('SpritesClient', () => {
     it('should return checkpoint by ID', async () => {
       const checkpoint = {
         id: 'cp-123',
-        spriteId: 'sprite-123',
+        create_time: '2024-01-01T00:00:00Z',
         comment: 'ghrun=1;job=build;step=test',
-        createdAt: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
@@ -239,13 +250,12 @@ describe('SpritesClient', () => {
     it('should create checkpoint with comment', async () => {
       const checkpoint = {
         id: 'cp-new',
-        spriteId: 'sprite-123',
+        create_time: '2024-01-01T00:00:00Z',
         comment: 'ghrun=1;job=build;step=deploy',
-        createdAt: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
-        .post('/sprites/sprite-123/checkpoints', { comment: 'ghrun=1;job=build;step=deploy' })
+        .post('/sprites/sprite-123/checkpoint', { comment: 'ghrun=1;job=build;step=deploy' })
         .reply(201, checkpoint);
 
       const client = new SpritesClient(TOKEN);
@@ -278,8 +288,8 @@ describe('SpritesClient', () => {
         id: 'sprite-123',
         name: 'retry-sprite',
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       nock(API_URL)
@@ -300,7 +310,7 @@ describe('SpritesClient', () => {
     }, 10000);
 
     it('should retry on 429 error', async () => {
-      const checkpoints = [{ id: 'cp-1', spriteId: 'sprite-123', createdAt: '2024-01-01T00:00:00Z' }];
+      const checkpoints = [{ id: 'cp-1', spriteId: 'sprite-123', created_at: '2024-01-01T00:00:00Z' }];
 
       nock(API_URL)
         .get('/sprites/sprite-123/checkpoints')
@@ -429,7 +439,7 @@ describe('SpritesClient', () => {
         },
       })
         .get('/sprites/sprite-123')
-        .reply(200, { id: 'sprite-123', name: 'test', status: 'running', createdAt: '', updatedAt: '' });
+        .reply(200, { id: 'sprite-123', name: 'test', status: 'running', created_at: '', updated_at: '' });
 
       const client = new SpritesClient(TOKEN);
       await client.getSprite('sprite-123');

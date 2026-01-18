@@ -31,6 +31,6 @@ export declare function findCheckpointForStep(checkpoints: Array<{
 export declare function findLastCheckpointForJob(checkpoints: Array<{
     id: string;
     comment?: string;
-    createdAt: string;
+    create_time: string;
 }>, runId: string, jobKey: string): string | null;
 //# sourceMappingURL=identity.d.ts.map

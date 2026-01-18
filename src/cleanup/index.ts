@@ -42,7 +42,7 @@ export function isSpriteKitSprite(sprite: Sprite): boolean {
  * Check if a sprite is older than the specified number of days
  */
 export function isSpriteOlderThan(sprite: Sprite, days: number): boolean {
-  const createdAt = new Date(sprite.createdAt);
+  const createdAt = new Date(sprite.created_at);
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
   return createdAt < cutoffDate;
@@ -94,18 +94,21 @@ async function deleteOldSprites(
 ): Promise<string[]> {
   core.info(`Looking for sprites older than ${maxAgeDays} days with prefix '${SPRITE_KIT_PREFIX}'`);
 
-  // List all sprites (API may or may not support prefix filtering)
-  let sprites: Sprite[];
-  try {
-    sprites = await client.listSprites(SPRITE_KIT_PREFIX);
-  } catch {
-    // If the API doesn't support prefix filtering, list all sprites
-    core.debug('Prefix filtering not supported, listing all sprites');
-    sprites = await client.listSprites();
+  // List sprites with prefix filter
+  const response = await client.listSprites(SPRITE_KIT_PREFIX);
+  
+  // Fetch full sprite details for each entry to get creation dates
+  const sprites: Sprite[] = [];
+  for (const entry of response.sprites) {
+    try {
+      const sprite = await client.getSprite(entry.name);
+      sprites.push(sprite);
+    } catch (error) {
+      core.warning(`Failed to get sprite ${entry.name}: ${error}`);
+    }
   }
 
   // Always filter client-side to ensure we only process sprite-kit sprites
-  // (in case the API doesn't actually filter by prefix)
   const spriteKitSprites = sprites.filter(isSpriteKitSprite);
   core.info(`Found ${spriteKitSprites.length} sprite-kit sprites`);
 
@@ -118,10 +121,10 @@ async function deleteOldSprites(
   for (const sprite of oldSprites) {
     try {
       if (dryRun) {
-        core.info(`[DRY RUN] Would delete sprite: ${sprite.id} (${sprite.name}, created ${sprite.createdAt})`);
+        core.info(`[DRY RUN] Would delete sprite: ${sprite.id} (${sprite.name}, created ${sprite.created_at})`);
       } else {
-        await client.deleteSprite(sprite.id);
-        core.info(`Deleted sprite: ${sprite.id} (${sprite.name}, created ${sprite.createdAt})`);
+        await client.deleteSprite(sprite.name);
+        core.info(`Deleted sprite: ${sprite.id} (${sprite.name}, created ${sprite.created_at})`);
       }
       deletedIds.push(sprite.id);
     } catch (error) {

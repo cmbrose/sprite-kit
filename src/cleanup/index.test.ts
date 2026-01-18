@@ -99,9 +99,12 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-owner-repo-workflow-123-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-123-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       expect(isSpriteKitSprite(sprite)).toBe(true);
@@ -111,9 +114,12 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'my-custom-sprite',
+        organization: 'test-org',
+        url: 'https://my-custom-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       expect(isSpriteKitSprite(sprite)).toBe(false);
@@ -123,9 +129,12 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'some-gh-sprite',
+        organization: 'test-org',
+        url: 'https://some-gh-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       expect(isSpriteKitSprite(sprite)).toBe(false);
@@ -140,9 +149,12 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-old-sprite',
+        organization: 'test-org',
+        url: 'https://gh-old-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: oldDate.toISOString(),
-        updatedAt: oldDate.toISOString(),
+        created_at: oldDate.toISOString(),
+        updated_at: oldDate.toISOString(),
       };
 
       expect(isSpriteOlderThan(sprite, 3)).toBe(true);
@@ -155,9 +167,12 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-new-sprite',
+        organization: 'test-org',
+        url: 'https://gh-new-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: newDate.toISOString(),
-        updatedAt: newDate.toISOString(),
+        created_at: newDate.toISOString(),
+        updated_at: newDate.toISOString(),
       };
 
       expect(isSpriteOlderThan(sprite, 3)).toBe(false);
@@ -170,9 +185,12 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-cutoff-sprite',
+        organization: 'test-org',
+        url: 'https://gh-cutoff-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: cutoffDate.toISOString(),
-        updatedAt: cutoffDate.toISOString(),
+        created_at: cutoffDate.toISOString(),
+        updated_at: cutoffDate.toISOString(),
       };
 
       // Sprite at exactly cutoff should not be deleted (not strictly older)
@@ -185,16 +203,19 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-owner-repo-workflow-123-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-123-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       mockClient.getSprite.mockResolvedValue(sprite);
       mockClient.deleteSprite.mockResolvedValue();
 
       await run({
-        spriteId: 'sprite-123',
+        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: false,
@@ -210,15 +231,18 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'my-custom-sprite',
+        organization: 'test-org',
+        url: 'https://my-custom-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       mockClient.getSprite.mockResolvedValue(sprite);
 
       await run({
-        spriteId: 'sprite-123',
+        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: false,
@@ -235,7 +259,7 @@ describe('Cleanup Action', () => {
       mockClient.getSprite.mockRejectedValue({ status: 404 });
 
       await run({
-        spriteId: 'sprite-123',
+        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: false,
@@ -251,15 +275,18 @@ describe('Cleanup Action', () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-owner-repo-workflow-123-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-123-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       mockClient.getSprite.mockResolvedValue(sprite);
 
       await run({
-        spriteId: 'sprite-123',
+        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: true,
@@ -282,30 +309,42 @@ describe('Cleanup Action', () => {
         {
           id: 'old-sprite-1',
           name: 'gh-owner-repo-workflow-1-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-1-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: oldDate.toISOString(),
-          updatedAt: oldDate.toISOString(),
+          created_at: oldDate.toISOString(),
+          updated_at: oldDate.toISOString(),
         },
         {
           id: 'old-sprite-2',
           name: 'gh-owner-repo-workflow-2-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-2-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: oldDate.toISOString(),
-          updatedAt: oldDate.toISOString(),
+          created_at: oldDate.toISOString(),
+          updated_at: oldDate.toISOString(),
         },
         {
           id: 'new-sprite',
           name: 'gh-owner-repo-workflow-3-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-3-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
         {
           id: 'non-gh-sprite',
           name: 'custom-sprite',
+        organization: 'test-org',
+        url: 'https://custom-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: oldDate.toISOString(),
-          updatedAt: oldDate.toISOString(),
+          created_at: oldDate.toISOString(),
+          updated_at: oldDate.toISOString(),
         },
       ];
 
@@ -333,9 +372,12 @@ describe('Cleanup Action', () => {
         {
           id: 'old-sprite',
           name: 'gh-owner-repo-workflow-1-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-1-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: oldDate.toISOString(),
-          updatedAt: oldDate.toISOString(),
+          created_at: oldDate.toISOString(),
+          updated_at: oldDate.toISOString(),
         },
       ];
 
@@ -374,16 +416,22 @@ describe('Cleanup Action', () => {
         {
           id: 'sprite-1',
           name: 'gh-owner-repo-workflow-1-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-1-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: oldDate.toISOString(),
-          updatedAt: oldDate.toISOString(),
+          created_at: oldDate.toISOString(),
+          updated_at: oldDate.toISOString(),
         },
         {
           id: 'sprite-2',
           name: 'gh-owner-repo-workflow-2-job',
+        organization: 'test-org',
+        url: 'https://gh-owner-repo-workflow-2-job.sprites.app',
+        url_settings: { auth: 'sprite' as const },
           status: 'running',
-          createdAt: oldDate.toISOString(),
-          updatedAt: oldDate.toISOString(),
+          created_at: oldDate.toISOString(),
+          updated_at: oldDate.toISOString(),
         },
       ];
 
@@ -422,3 +470,4 @@ describe('Cleanup Action', () => {
     });
   });
 });
+

@@ -135,7 +135,7 @@ describe('Run Action', () => {
           id: 'cp-1',
           spriteId: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=install',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         },
       ]);
 
@@ -151,7 +151,7 @@ describe('Run Action', () => {
           id: 'cp-1',
           spriteId: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=other',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         },
       ]);
 
@@ -167,7 +167,7 @@ describe('Run Action', () => {
           id: 'cp-1',
           spriteId: 'sprite-123',
           comment: 'ghrun=99999;job=build;step=install',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         },
       ]);
 
@@ -188,7 +188,7 @@ describe('Run Action', () => {
         id: 'cp-1',
         spriteId: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=install',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
       mockClient.restoreCheckpoint.mockResolvedValue();
 
@@ -203,7 +203,7 @@ describe('Run Action', () => {
         id: 'cp-1',
         spriteId: 'sprite-123',
         comment: 'ghrun=99999;job=other;step=install',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
 
       const result = await maybeRestore(mockClient, 'sprite-123', 'cp-1', '12345', 'build');
@@ -239,7 +239,7 @@ describe('Run Action', () => {
           id: 'cp-1',
           spriteId: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=install',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         },
       ]);
 
@@ -258,7 +258,7 @@ describe('Run Action', () => {
         id: 'cp-new',
         spriteId: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=install',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
 
       await run(baseInputs, () => mockClient);
@@ -283,14 +283,14 @@ describe('Run Action', () => {
         id: 'cp-previous',
         spriteId: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=previous',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
       mockClient.restoreCheckpoint.mockResolvedValue();
       mockClient.exec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' });
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
         spriteId: 'sprite-123',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
 
       await run({ ...baseInputs, lastCheckpointId: 'cp-previous' }, () => mockClient);
@@ -316,7 +316,7 @@ describe('Run Action', () => {
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
         spriteId: 'sprite-123',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
 
       await run({ ...baseInputs, workdir: '/app/frontend' }, () => mockClient);
@@ -334,7 +334,7 @@ describe('Run Action', () => {
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
         spriteId: 'sprite-123',
-        createdAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
       });
 
       await run(baseInputs, () => mockClient);

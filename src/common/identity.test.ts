@@ -193,10 +193,10 @@ describe('findCheckpointForStep', () => {
 
 describe('findLastCheckpointForJob', () => {
   const checkpoints = [
-    { id: 'cp1', comment: 'ghrun=12345;job=build;step=install', createdAt: '2024-01-01T10:00:00Z' },
-    { id: 'cp2', comment: 'ghrun=12345;job=build;step=build', createdAt: '2024-01-01T11:00:00Z' },
-    { id: 'cp3', comment: 'ghrun=12345;job=test;step=install', createdAt: '2024-01-01T12:00:00Z' },
-    { id: 'cp4', comment: 'ghrun=99999;job=build;step=install', createdAt: '2024-01-01T13:00:00Z' },
+    { id: 'cp1', comment: 'ghrun=12345;job=build;step=install', create_time: '2024-01-01T10:00:00Z' },
+    { id: 'cp2', comment: 'ghrun=12345;job=build;step=build', create_time: '2024-01-01T11:00:00Z' },
+    { id: 'cp3', comment: 'ghrun=12345;job=test;step=install', create_time: '2024-01-01T12:00:00Z' },
+    { id: 'cp4', comment: 'ghrun=99999;job=build;step=install', create_time: '2024-01-01T13:00:00Z' },
   ];
 
   it('should find the most recent checkpoint for job', () => {

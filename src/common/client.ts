@@ -4,6 +4,8 @@ import * as http from 'http';
 import { URL } from 'url';
 import {
   Sprite,
+  SpriteEntry,
+  ListSpritesResponse,
   Checkpoint,
   CreateSpriteOptions,
   CreateCheckpointOptions,
@@ -67,17 +69,15 @@ export class SpritesClient {
   }
 
   /**
-   * Get a sprite by name
+   * Get a sprite by name using GET /v1/sprites/{name}
    */
   async getSpriteByName(name: string): Promise<Sprite | null> {
     try {
-      const sprites = await this.request<Sprite[]>({
+      const sprite = await this.request<Sprite>({
         method: 'GET',
-        path: `/sprites?prefix=${encodeURIComponent(name)}`,
+        path: `/sprites/${encodeURIComponent(name)}`,
       });
-      // Filter to exact match since prefix can return multiple results
-      const exactMatch = sprites.find(s => s.name === name);
-      return exactMatch || null;
+      return sprite;
     } catch (error) {
       if ((error as ApiError).status === 404) {
         return null;
@@ -117,12 +117,12 @@ export class SpritesClient {
   }
 
   /**
-   * Create a new checkpoint
+   * Create a new checkpoint using POST /v1/sprites/{name}/checkpoint
    */
   async createCheckpoint(options: CreateCheckpointOptions): Promise<Checkpoint> {
     const response = await this.request<Checkpoint>({
       method: 'POST',
-      path: `/sprites/${options.spriteId}/checkpoints`,
+      path: `/sprites/${options.spriteId}/checkpoint`,
       body: { comment: options.comment },
     });
     core.info(`Created checkpoint: ${response.id}`);
@@ -361,12 +361,12 @@ export class SpritesClient {
   /**
    * List all sprites, optionally filtered by name prefix
    */
-  async listSprites(namePrefix?: string): Promise<Sprite[]> {
+  async listSprites(namePrefix?: string): Promise<ListSpritesResponse> {
     let path = '/sprites';
     if (namePrefix) {
-      path += `?namePrefix=${encodeURIComponent(namePrefix)}`;
+      path += `?prefix=${encodeURIComponent(namePrefix)}`;
     }
-    return this.request<Sprite[]>({
+    return this.request<ListSpritesResponse>({
       method: 'GET',
       path,
     });

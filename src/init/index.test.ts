@@ -166,9 +166,12 @@ describe('Init Action', () => {
       mockClient.createOrGetSprite.mockResolvedValue({
         id: 'sprite-123',
         name: 'gh-test-owner-test-repo-ci-12345-build',
+        organization: 'test-org',
+        url: 'https://gh-test-owner-test-repo-ci-12345-build.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       });
       mockClient.listCheckpoints.mockResolvedValue([]);
 
@@ -192,22 +195,25 @@ describe('Init Action', () => {
       mockClient.createOrGetSprite.mockResolvedValue({
         id: 'sprite-123',
         name: 'test-sprite',
+        organization: 'test-org',
+        url: 'https://test-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       });
       mockClient.listCheckpoints.mockResolvedValue([
         {
           id: 'cp-1',
-          spriteId: 'sprite-123',
+          sprite_id: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=install',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         },
         {
           id: 'cp-2',
-          spriteId: 'sprite-123',
+          sprite_id: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=build',
-          createdAt: '2024-01-01T01:00:00Z',
+          created_at: '2024-01-01T01:00:00Z',
         },
       ]);
 
@@ -230,9 +236,12 @@ describe('Init Action', () => {
       mockClient.createOrGetSprite.mockResolvedValue({
         id: 'sprite-123',
         name: 'test-sprite',
+        organization: 'test-org',
+        url: 'https://test-sprite.sprites.app',
+        url_settings: { auth: 'sprite' as const },
         status: 'running',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
       });
       mockClient.listCheckpoints.mockResolvedValue([]);
 
@@ -257,3 +266,4 @@ describe('Init Action', () => {
     });
   });
 });
+

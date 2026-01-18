@@ -25714,7 +25714,7 @@ function isSpriteKitSprite(sprite) {
  * Check if a sprite is older than the specified number of days
  */
 function isSpriteOlderThan(sprite, days) {
-    const createdAt = new Date(sprite.createdAt);
+    const createdAt = new Date(sprite.created_at);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return createdAt < cutoffDate;
@@ -25753,18 +25753,20 @@ async function deleteSpecificSprite(client, spriteId, dryRun) {
  */
 async function deleteOldSprites(client, maxAgeDays, dryRun) {
     core.info(`Looking for sprites older than ${maxAgeDays} days with prefix '${SPRITE_KIT_PREFIX}'`);
-    // List all sprites (API may or may not support prefix filtering)
-    let sprites;
-    try {
-        sprites = await client.listSprites(SPRITE_KIT_PREFIX);
-    }
-    catch {
-        // If the API doesn't support prefix filtering, list all sprites
-        core.debug('Prefix filtering not supported, listing all sprites');
-        sprites = await client.listSprites();
+    // List sprites with prefix filter
+    const response = await client.listSprites(SPRITE_KIT_PREFIX);
+    // Fetch full sprite details for each entry to get creation dates
+    const sprites = [];
+    for (const entry of response.sprites) {
+        try {
+            const sprite = await client.getSprite(entry.name);
+            sprites.push(sprite);
+        }
+        catch (error) {
+            core.warning(`Failed to get sprite ${entry.name}: ${error}`);
+        }
     }
     // Always filter client-side to ensure we only process sprite-kit sprites
-    // (in case the API doesn't actually filter by prefix)
     const spriteKitSprites = sprites.filter(isSpriteKitSprite);
     core.info(`Found ${spriteKitSprites.length} sprite-kit sprites`);
     // Filter to old sprites
@@ -25774,11 +25776,11 @@ async function deleteOldSprites(client, maxAgeDays, dryRun) {
     for (const sprite of oldSprites) {
         try {
             if (dryRun) {
-                core.info(`[DRY RUN] Would delete sprite: ${sprite.id} (${sprite.name}, created ${sprite.createdAt})`);
+                core.info(`[DRY RUN] Would delete sprite: ${sprite.id} (${sprite.name}, created ${sprite.created_at})`);
             }
             else {
-                await client.deleteSprite(sprite.id);
-                core.info(`Deleted sprite: ${sprite.id} (${sprite.name}, created ${sprite.createdAt})`);
+                await client.deleteSprite(sprite.name);
+                core.info(`Deleted sprite: ${sprite.id} (${sprite.name}, created ${sprite.created_at})`);
             }
             deletedIds.push(sprite.id);
         }
@@ -25927,17 +25929,15 @@ class SpritesClient {
         return response;
     }
     /**
-     * Get a sprite by name
+     * Get a sprite by name using GET /v1/sprites/{name}
      */
     async getSpriteByName(name) {
         try {
-            const sprites = await this.request({
+            const sprite = await this.request({
                 method: 'GET',
-                path: `/sprites?prefix=${encodeURIComponent(name)}`,
+                path: `/sprites/${encodeURIComponent(name)}`,
             });
-            // Filter to exact match since prefix can return multiple results
-            const exactMatch = sprites.find(s => s.name === name);
-            return exactMatch || null;
+            return sprite;
         }
         catch (error) {
             if (error.status === 404) {
@@ -25974,12 +25974,12 @@ class SpritesClient {
         });
     }
     /**
-     * Create a new checkpoint
+     * Create a new checkpoint using POST /v1/sprites/{name}/checkpoint
      */
     async createCheckpoint(options) {
         const response = await this.request({
             method: 'POST',
-            path: `/sprites/${options.spriteId}/checkpoints`,
+            path: `/sprites/${options.spriteId}/checkpoint`,
             body: { comment: options.comment },
         });
         core.info(`Created checkpoint: ${response.id}`);
@@ -26190,7 +26190,7 @@ class SpritesClient {
     async listSprites(namePrefix) {
         let path = '/sprites';
         if (namePrefix) {
-            path += `?namePrefix=${encodeURIComponent(namePrefix)}`;
+            path += `?prefix=${encodeURIComponent(namePrefix)}`;
         }
         return this.request({
             method: 'GET',

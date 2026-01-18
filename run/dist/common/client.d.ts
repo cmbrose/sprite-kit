@@ -1,4 +1,4 @@
-import { Sprite, Checkpoint, CreateSpriteOptions, CreateCheckpointOptions, ExecOptions, ExecResult } from './types';
+import { Sprite, ListSpritesResponse, Checkpoint, CreateSpriteOptions, CreateCheckpointOptions, ExecOptions, ExecResult } from './types';
 /**
  * Sprites API client with automatic retry for transient errors
  */
@@ -11,7 +11,7 @@ export declare class SpritesClient {
      */
     createOrGetSprite(options: CreateSpriteOptions): Promise<Sprite>;
     /**
-     * Get a sprite by name
+     * Get a sprite by name using GET /v1/sprites/{name}
      */
     getSpriteByName(name: string): Promise<Sprite | null>;
     /**
@@ -27,7 +27,7 @@ export declare class SpritesClient {
      */
     getCheckpoint(spriteId: string, checkpointId: string): Promise<Checkpoint>;
     /**
-     * Create a new checkpoint
+     * Create a new checkpoint using POST /v1/sprites/{name}/checkpoint
      */
     createCheckpoint(options: CreateCheckpointOptions): Promise<Checkpoint>;
     /**
@@ -57,7 +57,7 @@ export declare class SpritesClient {
     /**
      * List all sprites, optionally filtered by name prefix
      */
-    listSprites(namePrefix?: string): Promise<Sprite[]>;
+    listSprites(namePrefix?: string): Promise<ListSpritesResponse>;
     /**
      * Sleep for specified milliseconds
      */

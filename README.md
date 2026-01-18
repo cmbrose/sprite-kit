@@ -46,9 +46,10 @@ jobs:
           step-key: test
           run: npm test
 
-      # Clean up sprite after job completes
+      # Clean up sprite after successful job completion
+      # Note: Don't use if: always() - that would delete the checkpoint
+      # and prevent retries from restoring state
       - name: Cleanup
-        if: always()
         uses: cmbrose/sprite-kit/cleanup@v1
         with:
           sprite-id: ${{ steps.sprite.outputs.sprite-id }}
@@ -268,7 +269,7 @@ Access step outputs for conditional logic:
 
 ### Cleanup After Job
 
-Always clean up sprites after your job completes to avoid resource accumulation:
+Clean up sprites after successful job completion:
 
 ```yaml
 steps:
@@ -279,11 +280,12 @@ steps:
   # ... your run steps ...
 
   - name: Cleanup
-    if: always()  # Run even if previous steps failed
     uses: cmbrose/sprite-kit/cleanup@v1
     with:
       sprite-id: ${{ steps.sprite.outputs.sprite-id }}
 ```
+
+> **Important**: Do not use `if: always()` for cleanup. If a job fails and you retry it, the checkpoint must still exist to restore state. Cleaning up on failure would delete the checkpoint and break retry functionality. Use the scheduled cleanup (below) to handle sprites from failed jobs that are never retried.
 
 ### Scheduled Cleanup
 

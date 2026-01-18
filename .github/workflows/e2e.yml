@@ -300,8 +300,10 @@ jobs:
             echo "  2. The checkpoint was restored (marker file exists)"
             echo "  3. Step 2 was re-run on retry and succeeded"
 
+      # Only cleanup on success - if we cleanup on failure, the checkpoint
+      # won't exist for the retry to restore from
       - name: Cleanup Sprite
-        if: always()
+        if: success()
         uses: ./cleanup
         with:
           sprite-id: ${{ steps.init.outputs.sprite-id }}

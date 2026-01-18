@@ -197,7 +197,116 @@ jobs:
         with:
           sprite-id: ${{ steps.init.outputs.sprite-id }}
 
-  # Test 5: Cleanup action test
+  # Test 5: Retry smoke test - proves checkpoint/restore works
+  # This test MUST be run twice to succeed:
+  # - First run: step1 succeeds (writes file), step2 fails
+  # - Retry: step1 is SKIPPED (would fail if run), step2 succeeds and verifies file exists
+  retry-smoke-test:
+    name: Retry Smoke Test
+    runs-on: ubuntu-latest
+    if: ${{ env.SPRITES_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init Sprite
+        id: init
+        uses: ./init
+
+      - name: Debug run attempt
+        run: |
+          echo "Run attempt: ${{ github.run_attempt }}"
+          echo "Run ID: ${{ github.run_id }}"
+
+      # Step 1: Succeeds ONLY on first attempt, writes a marker file
+      # If this runs on retry (run_attempt > 1), it fails - proving skip worked
+      - name: Step 1 - Write marker file (must be skipped on retry)
+        id: step1
+        uses: ./run
+        with:
+          step-key: write-marker
+          run: |
+            echo "Run attempt: ${{ github.run_attempt }}"
+
+            # This step should ONLY run on the first attempt
+            # If run_attempt > 1, this step should have been skipped
+            if [ "${{ github.run_attempt }}" != "1" ]; then
+              echo "ERROR: This step should have been skipped on retry!"
+              echo "If you see this, the checkpoint restore did not work."
+              exit 1
+            fi
+
+            # Write a marker file that proves this step ran
+            mkdir -p /tmp/sprite-test
+            echo "written-by-step1-attempt-${{ github.run_attempt }}" > /tmp/sprite-test/marker.txt
+            echo "Marker file written successfully"
+
+      - name: Verify Step 1 behavior
+        run: |
+          echo "Step 1 skipped: ${{ steps.step1.outputs.skipped }}"
+          echo "Step 1 checkpoint-id: ${{ steps.step1.outputs.checkpoint-id }}"
+
+          if [ "${{ github.run_attempt }}" = "1" ]; then
+            # On first attempt, step1 should have run (not skipped)
+            if [ "${{ steps.step1.outputs.skipped }}" = "true" ]; then
+              echo "ERROR: Step 1 was skipped on first attempt - should have run"
+              exit 1
+            fi
+          else
+            # On retry, step1 should have been skipped
+            if [ "${{ steps.step1.outputs.skipped }}" != "true" ]; then
+              echo "ERROR: Step 1 was NOT skipped on retry - checkpoint restore failed"
+              exit 1
+            fi
+          fi
+
+      # Step 2: Fails on first attempt, succeeds on retry
+      # Also verifies the marker file exists (proving checkpoint was restored)
+      - name: Step 2 - Verify marker and succeed on retry
+        id: step2
+        uses: ./run
+        with:
+          step-key: verify-marker
+          run: |
+            echo "Run attempt: ${{ github.run_attempt }}"
+
+            # Verify the marker file from step 1 exists
+            # This proves the checkpoint was restored correctly
+            if [ ! -f /tmp/sprite-test/marker.txt ]; then
+              echo "ERROR: Marker file not found!"
+              echo "This means the checkpoint was not restored properly."
+              exit 1
+            fi
+
+            MARKER_CONTENT=$(cat /tmp/sprite-test/marker.txt)
+            echo "Marker file content: $MARKER_CONTENT"
+
+            # Verify the marker was written on attempt 1
+            if [[ "$MARKER_CONTENT" != "written-by-step1-attempt-1" ]]; then
+              echo "ERROR: Marker file has unexpected content"
+              exit 1
+            fi
+
+            echo "Checkpoint verification passed - marker file exists with correct content"
+
+            # This step fails on first attempt, succeeds on retry
+            if [ "${{ github.run_attempt }}" = "1" ]; then
+              echo "First attempt - intentionally failing to test retry"
+              exit 1
+            fi
+
+            echo "Retry attempt - SUCCESS!"
+            echo "The retry smoke test has passed. This proves:"
+            echo "  1. Step 1 was correctly skipped on retry (or it would have failed)"
+            echo "  2. The checkpoint was restored (marker file exists)"
+            echo "  3. Step 2 was re-run on retry and succeeded"
+
+      - name: Cleanup Sprite
+        if: always()
+        uses: ./cleanup
+        with:
+          sprite-id: ${{ steps.init.outputs.sprite-id }}
+
+  # Test 6: Cleanup action test
   cleanup-test:
     name: Cleanup Action Test
     runs-on: ubuntu-latest

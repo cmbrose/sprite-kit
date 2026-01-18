@@ -10,7 +10,7 @@ import { RunInputs } from '../common/types';
 /**
  * Get inputs for the run action
  */
-function getInputs(): RunInputs {
+export function getInputs(): RunInputs {
   return {
     stepKey: core.getInput('step-key', { required: true }),
     run: core.getInput('run', { required: true }),
@@ -27,7 +27,7 @@ function getInputs(): RunInputs {
 /**
  * Validate required inputs
  */
-function validateInputs(inputs: RunInputs): void {
+export function validateInputs(inputs: RunInputs): void {
   if (!inputs.token) {
     throw new Error(
       'Sprites token is required. Set SPRITES_TOKEN environment variable or provide token input.'
@@ -53,7 +53,7 @@ function validateInputs(inputs: RunInputs): void {
 /**
  * Check if step should be skipped based on existing checkpoint
  */
-async function shouldSkipStep(
+export async function shouldSkipStep(
   client: SpritesClient,
   spriteId: string,
   runId: string,
@@ -72,7 +72,7 @@ async function shouldSkipStep(
 /**
  * Restore from checkpoint if needed
  */
-async function maybeRestore(
+export async function maybeRestore(
   client: SpritesClient,
   spriteId: string,
   lastCheckpointId: string | undefined,
@@ -105,17 +105,22 @@ async function maybeRestore(
 /**
  * Main entry point for run action
  */
-async function run(): Promise<void> {
+export async function run(
+  inputsOverride?: Partial<RunInputs>,
+  clientFactory?: (token: string, apiUrl?: string) => SpritesClient
+): Promise<void> {
   let restored = false;
   let skipped = false;
   let checkpointId = '';
   let exitCode = 0;
 
   try {
-    const inputs = getInputs();
+    const inputs = { ...getInputs(), ...inputsOverride };
     validateInputs(inputs);
 
-    const client = new SpritesClient(inputs.token!, inputs.apiUrl);
+    const client = clientFactory
+      ? clientFactory(inputs.token!, inputs.apiUrl)
+      : new SpritesClient(inputs.token!, inputs.apiUrl);
     const { spriteId, runId, jobKey, stepKey, lastCheckpointId } = inputs;
 
     core.info(`Step key: ${stepKey}`);
@@ -154,7 +159,7 @@ async function run(): Promise<void> {
       const result = await client.exec({
         spriteId,
         command: inputs.run,
-        workdir: inputs.workdir,
+        workdir: inputs.workdir || undefined,
       });
 
       exitCode = result.exitCode;
@@ -201,4 +206,7 @@ async function run(): Promise<void> {
   }
 }
 
-run();
+// Only run if this is the main module
+if (require.main === module) {
+  run();
+}

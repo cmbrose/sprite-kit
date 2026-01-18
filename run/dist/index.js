@@ -26194,6 +26194,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getInputs = getInputs;
+exports.validateInputs = validateInputs;
+exports.shouldSkipStep = shouldSkipStep;
+exports.maybeRestore = maybeRestore;
+exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const client_1 = __nccwpck_require__(6850);
 const identity_1 = __nccwpck_require__(9071);
@@ -26268,15 +26273,17 @@ async function maybeRestore(client, spriteId, lastCheckpointId, runId, jobKey) {
 /**
  * Main entry point for run action
  */
-async function run() {
+async function run(inputsOverride, clientFactory) {
     let restored = false;
     let skipped = false;
     let checkpointId = '';
     let exitCode = 0;
     try {
-        const inputs = getInputs();
+        const inputs = { ...getInputs(), ...inputsOverride };
         validateInputs(inputs);
-        const client = new client_1.SpritesClient(inputs.token, inputs.apiUrl);
+        const client = clientFactory
+            ? clientFactory(inputs.token, inputs.apiUrl)
+            : new client_1.SpritesClient(inputs.token, inputs.apiUrl);
         const { spriteId, runId, jobKey, stepKey, lastCheckpointId } = inputs;
         core.info(`Step key: ${stepKey}`);
         core.info(`Sprite ID: ${spriteId}`);
@@ -26302,7 +26309,7 @@ async function run() {
             const result = await client.exec({
                 spriteId,
                 command: inputs.run,
-                workdir: inputs.workdir,
+                workdir: inputs.workdir || undefined,
             });
             exitCode = result.exitCode;
             core.endGroup();
@@ -26344,7 +26351,10 @@ async function run() {
         }
     }
 }
-run();
+// Only run if this is the main module
+if (require.main === require.cache[eval('__filename')]) {
+    run();
+}
 
 
 /***/ }),

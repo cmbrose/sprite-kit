@@ -30473,6 +30473,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getInputs = getInputs;
+exports.buildGitHubContext = buildGitHubContext;
+exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const client_1 = __nccwpck_require__(6850);
@@ -30491,8 +30494,7 @@ function getInputs() {
 /**
  * Build GitHub context for identity derivation
  */
-function buildGitHubContext(inputs) {
-    const context = github.context;
+function buildGitHubContext(inputs, ghContext = github.context) {
     // Parse matrix from input if provided, otherwise try to extract from job name
     let matrix;
     if (inputs.matrixJson) {
@@ -30504,18 +30506,18 @@ function buildGitHubContext(inputs) {
         }
     }
     return {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        workflow: context.workflow,
-        runId: context.runId.toString(),
-        job: context.job,
+        owner: ghContext.repo.owner,
+        repo: ghContext.repo.repo,
+        workflow: ghContext.workflow,
+        runId: ghContext.runId.toString(),
+        job: ghContext.job,
         matrix,
     };
 }
 /**
  * Main entry point for init action
  */
-async function run() {
+async function run(clientFactory, ghContext) {
     try {
         const inputs = getInputs();
         // Validate token
@@ -30523,7 +30525,7 @@ async function run() {
             throw new Error('Sprites token is required. Set SPRITES_TOKEN environment variable or provide token input.');
         }
         // Build context and derive identity
-        const githubContext = buildGitHubContext(inputs);
+        const githubContext = buildGitHubContext(inputs, ghContext);
         const spriteName = (0, identity_1.deriveSpriteNameFromContext)(githubContext);
         const jobKey = inputs.jobKey || (0, identity_1.deriveJobKey)(githubContext);
         const runId = githubContext.runId;
@@ -30531,7 +30533,9 @@ async function run() {
         core.info(`Job key: ${jobKey}`);
         core.info(`Run ID: ${runId}`);
         // Initialize client
-        const client = new client_1.SpritesClient(inputs.token, inputs.apiUrl);
+        const client = clientFactory
+            ? clientFactory(inputs.token, inputs.apiUrl)
+            : new client_1.SpritesClient(inputs.token, inputs.apiUrl);
         // Create or get sprite
         const sprite = await client.createOrGetSprite({ name: spriteName });
         // List existing checkpoints
@@ -30569,7 +30573,10 @@ async function run() {
         }
     }
 }
-run();
+// Only run if this is the main module
+if (require.main === require.cache[eval('__filename')]) {
+    run();
+}
 
 
 /***/ }),

@@ -11,7 +11,7 @@ import { GitHubContext, InitInputs } from '../common/types';
 /**
  * Get inputs for the init action
  */
-function getInputs(): InitInputs {
+export function getInputs(): InitInputs {
   return {
     token: core.getInput('token') || process.env.SPRITES_TOKEN,
     apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
@@ -23,9 +23,7 @@ function getInputs(): InitInputs {
 /**
  * Build GitHub context for identity derivation
  */
-function buildGitHubContext(inputs: InitInputs): GitHubContext {
-  const context = github.context;
-
+export function buildGitHubContext(inputs: InitInputs, ghContext = github.context): GitHubContext {
   // Parse matrix from input if provided, otherwise try to extract from job name
   let matrix: Record<string, unknown> | undefined;
   if (inputs.matrixJson) {
@@ -37,11 +35,11 @@ function buildGitHubContext(inputs: InitInputs): GitHubContext {
   }
 
   return {
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    workflow: context.workflow,
-    runId: context.runId.toString(),
-    job: context.job,
+    owner: ghContext.repo.owner,
+    repo: ghContext.repo.repo,
+    workflow: ghContext.workflow,
+    runId: ghContext.runId.toString(),
+    job: ghContext.job,
     matrix,
   };
 }
@@ -49,7 +47,10 @@ function buildGitHubContext(inputs: InitInputs): GitHubContext {
 /**
  * Main entry point for init action
  */
-async function run(): Promise<void> {
+export async function run(
+  clientFactory?: (token: string, apiUrl?: string) => SpritesClient,
+  ghContext?: typeof github.context
+): Promise<void> {
   try {
     const inputs = getInputs();
 
@@ -61,7 +62,7 @@ async function run(): Promise<void> {
     }
 
     // Build context and derive identity
-    const githubContext = buildGitHubContext(inputs);
+    const githubContext = buildGitHubContext(inputs, ghContext);
     const spriteName = deriveSpriteNameFromContext(githubContext);
     const jobKey = inputs.jobKey || deriveJobKey(githubContext);
     const runId = githubContext.runId;
@@ -71,7 +72,9 @@ async function run(): Promise<void> {
     core.info(`Run ID: ${runId}`);
 
     // Initialize client
-    const client = new SpritesClient(inputs.token, inputs.apiUrl);
+    const client = clientFactory
+      ? clientFactory(inputs.token, inputs.apiUrl)
+      : new SpritesClient(inputs.token, inputs.apiUrl);
 
     // Create or get sprite
     const sprite = await client.createOrGetSprite({ name: spriteName });
@@ -114,4 +117,7 @@ async function run(): Promise<void> {
   }
 }
 
-run();
+// Only run if this is the main module
+if (require.main === module) {
+  run();
+}

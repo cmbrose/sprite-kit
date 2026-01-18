@@ -1,0 +1,50 @@
+{
+  "name": "sprite-kit",
+  "version": "1.0.0",
+  "description": "GitHub Actions for persistent CI steps using Sprite checkpointing and restoration",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "build:init": "ncc build src/init/index.ts -o init/dist --source-map",
+    "build:run": "ncc build src/run/index.ts -o run/dist --source-map",
+    "build:cleanup": "ncc build src/cleanup/index.ts -o cleanup/dist --source-map",
+    "build:all": "npm run build:init && npm run build:run && npm run build:cleanup",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmbrose/sprite-kit.git"
+  },
+  "keywords": [
+    "github-actions",
+    "ci",
+    "checkpointing",
+    "sprites"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cmbrose/sprite-kit/issues"
+  },
+  "homepage": "https://github.com/cmbrose/sprite-kit#readme",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vercel/ncc": "^0.38.1",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "nock": "^14.0.10",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}

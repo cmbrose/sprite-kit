@@ -1,0 +1,36 @@
+name: 'Sprite Cleanup'
+description: 'Clean up sprites - delete a specific sprite or remove old sprites created by sprite-kit actions'
+author: 'cmbrose'
+
+branding:
+  icon: 'trash-2'
+  color: 'red'
+
+inputs:
+  sprite-id:
+    description: 'Specific sprite ID to delete. If provided, only this sprite will be deleted.'
+    required: false
+  max-age-days:
+    description: 'Maximum age in days for sprites. Sprites older than this will be deleted. Only applies when sprite-id is not provided. Default: 3'
+    required: false
+    default: '3'
+  dry-run:
+    description: 'If true, only log what would be deleted without actually deleting. Default: false'
+    required: false
+    default: 'false'
+  token:
+    description: 'Sprites API token. If not provided, uses SPRITES_TOKEN environment variable.'
+    required: false
+  api-url:
+    description: 'Sprites API URL. Defaults to https://api.sprites.dev'
+    required: false
+
+outputs:
+  deleted-count:
+    description: 'Number of sprites deleted'
+  deleted-sprites:
+    description: 'JSON array of deleted sprite IDs'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

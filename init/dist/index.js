@@ -29966,7 +29966,7 @@ const core = __importStar(__nccwpck_require__(7484));
 const https = __importStar(__nccwpck_require__(5692));
 const http = __importStar(__nccwpck_require__(8611));
 const url_1 = __nccwpck_require__(7016);
-const DEFAULT_API_URL = 'https://api.sprites.dev';
+const DEFAULT_API_URL = 'https://api.sprites.dev/v1';
 const DEFAULT_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -30014,9 +30014,11 @@ class SpritesClient {
         try {
             const sprites = await this.request({
                 method: 'GET',
-                path: `/sprites?name=${encodeURIComponent(name)}`,
+                path: `/sprites?prefix=${encodeURIComponent(name)}`,
             });
-            return sprites.length > 0 ? sprites[0] : null;
+            // Filter to exact match since prefix can return multiple results
+            const exactMatch = sprites.find(s => s.name === name);
+            return exactMatch || null;
         }
         catch (error) {
             if (error.status === 404) {
@@ -30026,7 +30028,7 @@ class SpritesClient {
         }
     }
     /**
-     * Get a sprite by ID
+     * Get a sprite by ID or name
      */
     async getSprite(spriteId) {
         return this.request({

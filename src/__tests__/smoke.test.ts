@@ -27,7 +27,7 @@ jest.mock('@actions/core', () => ({
   endGroup: jest.fn(),
 }));
 
-const API_URL = 'https://api.sprites.dev';
+const API_URL = 'https://api.sprites.dev/v1';
 
 // Helper to create a mock sprite
 function createMockSprite(id: string, name: string): Sprite {
@@ -91,7 +91,7 @@ describe('Smoke Tests - README Examples', () => {
 
       // Setup API mocks for init
       nock(API_URL)
-        .get(`/sprites?name=${encodeURIComponent(spriteName)}`)
+        .get(`/sprites?prefix=${encodeURIComponent(spriteName)}`)
         .reply(200, []);
 
       nock(API_URL)
@@ -443,7 +443,7 @@ npm run build`;
 
       // Init step
       nock(API_URL)
-        .get(`/sprites?name=${encodeURIComponent(spriteName)}`)
+        .get(`/sprites?prefix=${encodeURIComponent(spriteName)}`)
         .reply(200, [createMockSprite(spriteId, spriteName)]);
 
       nock(API_URL)

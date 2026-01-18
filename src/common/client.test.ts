@@ -11,7 +11,7 @@ jest.mock('@actions/core', () => ({
 }));
 
 describe('SpritesClient', () => {
-  const API_URL = 'https://api.sprites.dev';
+  const API_URL = 'https://api.sprites.dev/v1';
   const TOKEN = 'test-token';
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe('SpritesClient', () => {
 
     it('should use default API URL when not provided', () => {
       const client = new SpritesClient(TOKEN);
-      expect(client['apiUrl']).toBe('https://api.sprites.dev');
+      expect(client['apiUrl']).toBe('https://api.sprites.dev/v1');
     });
 
     it('should use custom API URL when provided', () => {
@@ -52,7 +52,7 @@ describe('SpritesClient', () => {
       };
 
       nock(API_URL)
-        .get('/sprites?name=my-sprite')
+        .get('/sprites?prefix=my-sprite')
         .reply(200, [existingSprite]);
 
       const client = new SpritesClient(TOKEN);
@@ -72,7 +72,7 @@ describe('SpritesClient', () => {
       };
 
       nock(API_URL)
-        .get('/sprites?name=new-sprite')
+        .get('/sprites?prefix=new-sprite')
         .reply(200, []);
 
       nock(API_URL)
@@ -96,7 +96,7 @@ describe('SpritesClient', () => {
       };
 
       nock(API_URL)
-        .get('/sprites?name=another-sprite')
+        .get('/sprites?prefix=another-sprite')
         .reply(404, { message: 'Not found' });
 
       nock(API_URL)
@@ -121,7 +121,7 @@ describe('SpritesClient', () => {
       };
 
       nock(API_URL)
-        .get('/sprites?name=test-sprite')
+        .get('/sprites?prefix=test-sprite')
         .reply(200, [sprite]);
 
       const client = new SpritesClient(TOKEN);
@@ -132,7 +132,7 @@ describe('SpritesClient', () => {
 
     it('should return null when no sprites found', async () => {
       nock(API_URL)
-        .get('/sprites?name=nonexistent')
+        .get('/sprites?prefix=nonexistent')
         .reply(200, []);
 
       const client = new SpritesClient(TOKEN);
@@ -143,7 +143,7 @@ describe('SpritesClient', () => {
 
     it('should return null on 404', async () => {
       nock(API_URL)
-        .get('/sprites?name=missing')
+        .get('/sprites?prefix=missing')
         .reply(404, { message: 'Not found' });
 
       const client = new SpritesClient(TOKEN);

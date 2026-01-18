@@ -12,7 +12,7 @@ import {
   ApiError,
 } from './types';
 
-const DEFAULT_API_URL = 'https://api.sprites.dev';
+const DEFAULT_API_URL = 'https://api.sprites.dev/v1';
 const DEFAULT_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
@@ -73,9 +73,11 @@ export class SpritesClient {
     try {
       const sprites = await this.request<Sprite[]>({
         method: 'GET',
-        path: `/sprites?name=${encodeURIComponent(name)}`,
+        path: `/sprites?prefix=${encodeURIComponent(name)}`,
       });
-      return sprites.length > 0 ? sprites[0] : null;
+      // Filter to exact match since prefix can return multiple results
+      const exactMatch = sprites.find(s => s.name === name);
+      return exactMatch || null;
     } catch (error) {
       if ((error as ApiError).status === 404) {
         return null;
@@ -85,7 +87,7 @@ export class SpritesClient {
   }
 
   /**
-   * Get a sprite by ID
+   * Get a sprite by ID or name
    */
   async getSprite(spriteId: string): Promise<Sprite> {
     return this.request<Sprite>({

@@ -15,7 +15,7 @@ export declare class SpritesClient {
      */
     getSpriteByName(name: string): Promise<Sprite | null>;
     /**
-     * Get a sprite by ID
+     * Get a sprite by ID or name
      */
     getSprite(spriteId: string): Promise<Sprite>;
     /**

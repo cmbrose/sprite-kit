@@ -25975,6 +25975,29 @@ class SpritesClient {
         });
     }
     /**
+     * Delete a sprite by ID
+     */
+    async deleteSprite(spriteId) {
+        await this.request({
+            method: 'DELETE',
+            path: `/sprites/${spriteId}`,
+        });
+        core.info(`Deleted sprite: ${spriteId}`);
+    }
+    /**
+     * List all sprites, optionally filtered by name prefix
+     */
+    async listSprites(namePrefix) {
+        let path = '/sprites';
+        if (namePrefix) {
+            path += `?namePrefix=${encodeURIComponent(namePrefix)}`;
+        }
+        return this.request({
+            method: 'GET',
+            path,
+        });
+    }
+    /**
      * Sleep for specified milliseconds
      */
     sleep(ms) {

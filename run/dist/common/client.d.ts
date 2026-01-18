@@ -51,6 +51,14 @@ export declare class SpritesClient {
      */
     private doRequest;
     /**
+     * Delete a sprite by ID
+     */
+    deleteSprite(spriteId: string): Promise<void>;
+    /**
+     * List all sprites, optionally filtered by name prefix
+     */
+    listSprites(namePrefix?: string): Promise<Sprite[]>;
+    /**
      * Sleep for specified milliseconds
      */
     private sleep;

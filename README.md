@@ -45,6 +45,13 @@ jobs:
         with:
           step-key: test
           run: npm test
+
+      # Clean up sprite after job completes
+      - name: Cleanup
+        if: always()
+        uses: cmbrose/sprite-kit/cleanup@v1
+        with:
+          sprite-id: ${{ steps.sprite.outputs.sprite-id }}
 ```
 
 ## Core Concepts
@@ -131,6 +138,31 @@ Executes a step with checkpoint management.
 | `checkpoint-id` | Created checkpoint ID (or existing if skipped) |
 | `restored` | Whether restore occurred (`true`/`false`) |
 | `exit-code` | Command exit code (0 if skipped) |
+
+### Cleanup Action (`cmbrose/sprite-kit/cleanup`)
+
+Cleans up sprites after job completion or removes old sprites on a schedule.
+
+#### Inputs
+
+| Input | Required | Description |
+|-------|----------|-------------|
+| `sprite-id` | No | Specific sprite ID to delete. If provided, only this sprite will be deleted. |
+| `max-age-days` | No | Maximum age in days for sprites. Sprites older than this will be deleted. Only applies when sprite-id is not provided. Default: 3 |
+| `dry-run` | No | If true, only log what would be deleted without actually deleting. Default: false |
+| `token` | No | Sprites API token. Falls back to `SPRITES_TOKEN` env var. |
+| `api-url` | No | Sprites API URL |
+
+#### Outputs
+
+| Output | Description |
+|--------|-------------|
+| `deleted-count` | Number of sprites deleted |
+| `deleted-sprites` | JSON array of deleted sprite IDs |
+
+#### Safety Features
+
+The cleanup action only deletes sprites created by sprite-kit (those with the `gh-` prefix). This prevents accidental deletion of sprites created by other tools.
 
 ## Usage Guide
 
@@ -232,6 +264,57 @@ Access step outputs for conditional logic:
     else
       echo "Build completed with exit code ${{ steps.build.outputs.exit-code }}"
     fi
+```
+
+### Cleanup After Job
+
+Always clean up sprites after your job completes to avoid resource accumulation:
+
+```yaml
+steps:
+  - name: Init Sprite
+    id: sprite
+    uses: cmbrose/sprite-kit/init@v1
+
+  # ... your run steps ...
+
+  - name: Cleanup
+    if: always()  # Run even if previous steps failed
+    uses: cmbrose/sprite-kit/cleanup@v1
+    with:
+      sprite-id: ${{ steps.sprite.outputs.sprite-id }}
+```
+
+### Scheduled Cleanup
+
+For additional safety, set up a scheduled workflow to clean up old sprites:
+
+```yaml
+name: Cleanup Old Sprites
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: cmbrose/sprite-kit/cleanup@v1
+        with:
+          max-age-days: 3  # Delete sprites older than 3 days
+```
+
+### Dry Run
+
+Test cleanup without actually deleting:
+
+```yaml
+- uses: cmbrose/sprite-kit/cleanup@v1
+  with:
+    max-age-days: 1
+    dry-run: true  # Only log, don't delete
 ```
 
 ## Troubleshooting

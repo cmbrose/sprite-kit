@@ -346,6 +346,31 @@ export class SpritesClient {
   }
 
   /**
+   * Delete a sprite by ID
+   */
+  async deleteSprite(spriteId: string): Promise<void> {
+    await this.request<void>({
+      method: 'DELETE',
+      path: `/sprites/${spriteId}`,
+    });
+    core.info(`Deleted sprite: ${spriteId}`);
+  }
+
+  /**
+   * List all sprites, optionally filtered by name prefix
+   */
+  async listSprites(namePrefix?: string): Promise<Sprite[]> {
+    let path = '/sprites';
+    if (namePrefix) {
+      path += `?namePrefix=${encodeURIComponent(namePrefix)}`;
+    }
+    return this.request<Sprite[]>({
+      method: 'GET',
+      path,
+    });
+  }
+
+  /**
    * Sleep for specified milliseconds
    */
   private sleep(ms: number): Promise<void> {

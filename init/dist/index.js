@@ -30591,6 +30591,9 @@ async function run(clientFactory, ghContext) {
         if (error instanceof Error) {
             core.setFailed(error.message);
         }
+        else if (typeof error === 'object' && error !== null && 'message' in error) {
+            core.setFailed(String(error.message));
+        }
         else {
             core.setFailed('An unknown error occurred');
         }

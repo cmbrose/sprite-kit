@@ -215,7 +215,6 @@ describe('Cleanup Action', () => {
       mockClient.deleteSprite.mockResolvedValue();
 
       await run({
-        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: false,
@@ -242,7 +241,6 @@ describe('Cleanup Action', () => {
       mockClient.getSprite.mockResolvedValue(sprite);
 
       await run({
-        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: false,
@@ -259,7 +257,6 @@ describe('Cleanup Action', () => {
       mockClient.getSprite.mockRejectedValue({ status: 404 });
 
       await run({
-        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: false,
@@ -286,7 +283,6 @@ describe('Cleanup Action', () => {
       mockClient.getSprite.mockResolvedValue(sprite);
 
       await run({
-        sprite_id: 'sprite-123',
         token: 'test-token',
         maxAgeDays: 3,
         dryRun: true,

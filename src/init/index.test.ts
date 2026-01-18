@@ -205,13 +205,11 @@ describe('Init Action', () => {
       mockClient.listCheckpoints.mockResolvedValue([
         {
           id: 'cp-1',
-          sprite_id: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=install',
           created_at: '2024-01-01T00:00:00Z',
         },
         {
           id: 'cp-2',
-          sprite_id: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=build',
           created_at: '2024-01-01T01:00:00Z',
         },

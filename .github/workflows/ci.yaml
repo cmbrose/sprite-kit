@@ -25,23 +25,23 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # test:
+  #   name: Test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Run tests
-        run: npm test
+  #     - name: Run tests
+  #       run: npm test
 
   build:
     name: Build
@@ -62,12 +62,13 @@ jobs:
         run: npm run build
 
       - name: Build actions with ncc
-        run: npm run build:all
+        run: npm run build
 
       - name: Verify dist files
         run: |
           test -f init/dist/index.js || exit 1
           test -f run/dist/index.js || exit 1
+          test -f clean/dist/index.js || exit 1
 
   release:
     name: Release

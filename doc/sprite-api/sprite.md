@@ -1,62 +1,74 @@
-Sprite Management API
+# Sprite Management API
 
-Sprite object
+## Schemas
 
-Sprite
+### Sprite
 
-Field	Type	Required	Description
-id	string (UUID)	yes	Unique sprite identifier
-name	string	yes	Sprite name within the organization
-organization	string	yes	Organization slug
-url	string	yes	Sprite HTTP endpoint URL
-url_settings	object	yes	URL access configuration
-status	"cold" | "warm" | "running"	yes	Runtime status
-created_at	string (ISO 8601)	yes	Creation timestamp
-updated_at	string (ISO 8601)	yes	Last update timestamp
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string (UUID) | yes | Unique sprite identifier |
+| `name` | string | yes | Sprite name within the organization |
+| `organization` | string | yes | Organization slug |
+| `url` | string | yes | Sprite HTTP endpoint URL |
+| `url_settings` | object | yes | URL access configuration |
+| `status` | `"cold"` \| `"warm"` \| `"running"` | yes | Runtime status |
+| `created_at` | string (ISO 8601) | yes | Creation timestamp |
+| `updated_at` | string (ISO 8601) | yes | Last update timestamp |
 
-URLSettings
+### URLSettings
 
-Field	Type	Required	Description
-auth	"sprite" | "public"	no	Authentication type (default: sprite)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `auth` | `"sprite"` \| `"public"` | no | Authentication type (default: sprite) |
 
-SpriteEntry
+### SpriteEntry
 
-Field	Type	Required	Description
-name	string	yes	Sprite name
-org_slug	string	yes	Organization slug
-updated_at	string (ISO 8601)	no	Last update timestamp
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | yes | Sprite name |
+| `org_slug` | string | yes | Organization slug |
+| `updated_at` | string (ISO 8601) | no | Last update timestamp |
 
+---
 
-⸻
+## Endpoints
 
-Create Sprite
+### Create Sprite
 
+```
 POST /v1/sprites
+```
+
 Create a new sprite with a unique name in your organization.
 
-Request body (application/json)
+#### Request body (`application/json`)
 
-Field	Type	Required	Description
-name	string	yes	Unique name for the sprite within the organization
-url_settings	object	no	URL access configuration
-url_settings.auth	"sprite" | "public"	no	Authentication type (default: sprite)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | yes | Unique name for the sprite within the organization |
+| `url_settings` | object | no | URL access configuration |
+| `url_settings.auth` | `"sprite"` \| `"public"` | no | Authentication type (default: sprite) |
 
-Response (application/json) — 201
+#### Response (`application/json`) — 201
 
-Returns a Sprite.
+Returns a `Sprite`.
 
-Response codes
-	•	201 Created
-	•	400 Invalid request parameters
-	•	401 Missing or invalid authentication
+#### Response codes
 
-Example
+- **201 Created**
+- **400 Invalid request parameters**
+- **401 Missing or invalid authentication**
 
+#### Example
+
+```bash
 curl -X POST "https://api.sprites.dev/v1/sprites" \
   -H "Authorization: Bearer $SPRITES_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-sprite","url_settings":{"auth":"public"}}'
+```
 
+```json
 {
   "id": "01234567-89ab-cdef-0123-456789abcdef",
   "name": "my-dev-sprite",
@@ -69,38 +81,47 @@ curl -X POST "https://api.sprites.dev/v1/sprites" \
     "auth": "sprite"
   }
 }
+```
 
+---
 
-⸻
+### List Sprites
 
-List Sprites
-
+```
 GET /v1/sprites
+```
+
 List all sprites for the authenticated organization.
 
-Query parameters
+#### Query parameters
 
-Name	Type	Required	Description
-prefix	string	no	Filter sprites by name prefix
-max_results	number	no	Maximum number of results (1–50, default: 50)
-continuation_token	string	no	Token from previous response for pagination
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `prefix` | string | no | Filter sprites by name prefix |
+| `max_results` | number | no | Maximum number of results (1–50, default: 50) |
+| `continuation_token` | string | no | Token from previous response for pagination |
 
-Response (application/json) — 200
+#### Response (`application/json`) — 200
 
-Field	Type	Required	Description
-sprites	SpriteEntry[]	yes	List of sprite entries
-has_more	boolean	yes	Whether more results are available
-next_continuation_token	string	no	Token for fetching the next page of results
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sprites` | `SpriteEntry[]` | yes | List of sprite entries |
+| `has_more` | boolean | yes | Whether more results are available |
+| `next_continuation_token` | string | no | Token for fetching the next page of results |
 
-Response codes
-	•	200 Success
-	•	401 Missing or invalid authentication
+#### Response codes
 
-Example
+- **200 Success**
+- **401 Missing or invalid authentication**
 
+#### Example
+
+```bash
 curl -X GET "https://api.sprites.dev/v1/sprites" \
   -H "Authorization: Bearer $SPRITES_TOKEN"
+```
 
+```json
 {
   "sprites": [
     {
@@ -112,34 +133,42 @@ curl -X GET "https://api.sprites.dev/v1/sprites" \
   "next_continuation_token": "eyJsYXN0IjoibXktZGV2LXNwcml0ZSJ9",
   "has_more": true
 }
+```
 
+---
 
-⸻
+### Get Sprite
 
-Get Sprite
-
+```
 GET /v1/sprites/{name}
+```
+
 Get details for a specific sprite.
 
-Path parameters
+#### Path parameters
 
-Name	Type	Required	Description
-name	string	yes	Unique sprite name
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | yes | Unique sprite name |
 
-Response (application/json) — 200
+#### Response (`application/json`) — 200
 
-Returns a Sprite.
+Returns a `Sprite`.
 
-Response codes
-	•	200 Success
-	•	401 Missing or invalid authentication
-	•	404 Sprite not found
+#### Response codes
 
-Example
+- **200 Success**
+- **401 Missing or invalid authentication**
+- **404 Sprite not found**
 
+#### Example
+
+```bash
 curl -X GET "https://api.sprites.dev/v1/sprites/{name}" \
   -H "Authorization: Bearer $SPRITES_TOKEN"
+```
 
+```json
 {
   "id": "01234567-89ab-cdef-0123-456789abcdef",
   "name": "my-dev-sprite",
@@ -152,43 +181,52 @@ curl -X GET "https://api.sprites.dev/v1/sprites/{name}" \
     "auth": "sprite"
   }
 }
+```
 
+---
 
-⸻
+### Update Sprite
 
-Update Sprite
-
+```
 PUT /v1/sprites/{name}
+```
+
 Update sprite settings such as URL authentication.
 
-Path parameters
+#### Path parameters
 
-Name	Type	Required	Description
-name	string	yes	Unique sprite name
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | yes | Unique sprite name |
 
-Request body (application/json)
+#### Request body (`application/json`)
 
-Field	Type	Required	Description
-url_settings	object	yes	URL access configuration to update
-url_settings.auth	"sprite" | "public"	no	Authentication type (default: sprite)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url_settings` | object | yes | URL access configuration to update |
+| `url_settings.auth` | `"sprite"` \| `"public"` | no | Authentication type (default: sprite) |
 
-Response (application/json) — 200
+#### Response (`application/json`) — 200
 
-Returns a Sprite.
+Returns a `Sprite`.
 
-Response codes
-	•	200 Success
-	•	400 Invalid request parameters
-	•	401 Missing or invalid authentication
-	•	404 Sprite not found
+#### Response codes
 
-Example
+- **200 Success**
+- **400 Invalid request parameters**
+- **401 Missing or invalid authentication**
+- **404 Sprite not found**
 
+#### Example
+
+```bash
 curl -X PUT "https://api.sprites.dev/v1/sprites/{name}" \
   -H "Authorization: Bearer $SPRITES_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"url_settings":{"auth":"public"}}'
+```
 
+```json
 {
   "id": "01234567-89ab-cdef-0123-456789abcdef",
   "name": "my-dev-sprite",
@@ -201,30 +239,37 @@ curl -X PUT "https://api.sprites.dev/v1/sprites/{name}" \
     "auth": "sprite"
   }
 }
+```
 
+---
 
-⸻
+### Destroy Sprite
 
-Destroy Sprite
-
+```
 DELETE /v1/sprites/{name}
+```
+
 Delete a sprite and all associated resources.
 
-Path parameters
+#### Path parameters
 
-Name	Type	Required	Description
-name	string	yes	Unique sprite name
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | yes | Unique sprite name |
 
-Response — 204
+#### Response — 204
 
 No content.
 
-Response codes
-	•	204 No content
-	•	401 Missing or invalid authentication
-	•	404 Sprite not found
+#### Response codes
 
-Example
+- **204 No content**
+- **401 Missing or invalid authentication**
+- **404 Sprite not found**
 
+#### Example
+
+```bash
 curl -X DELETE "https://api.sprites.dev/v1/sprites/{name}" \
   -H "Authorization: Bearer $SPRITES_TOKEN"
+```

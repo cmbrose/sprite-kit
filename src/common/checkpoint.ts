@@ -80,7 +80,7 @@ export function findLastCheckpointForJob(
     checkpoints: Array<Checkpoint>,
     runId: string,
     jobKey: string
-): string | null {
+): string {
     // Sort by creation time descending  
     const sorted = [...checkpoints].sort((a, b) =>
         new Date(b.createTime).getTime() - new Date(a.createTime).getTime()
@@ -97,7 +97,8 @@ export function findLastCheckpointForJob(
         }
     }
 
-    return null;
+    // v0 is automatically created by Sprite
+    return 'v0';
 }
 
 /**

@@ -28375,7 +28375,7 @@ function findLastCheckpointForJob(checkpoints, runId, jobKey) {
       return checkpoint.id;
     }
   }
-  return null;
+  return "v0";
 }
 
 // src/common/withApiRetry.ts
@@ -28466,12 +28466,12 @@ async function run(ghContext) {
     const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
     const checkpoints = await sprite.listCheckpoints();
     core3.info(`Found ${checkpoints.length} existing checkpoints`);
-    const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
-    const needsRestore = lastCheckpointId !== null && checkpoints.length > 0;
-    if (lastCheckpointId) {
+    let lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
+    const needsRestore = lastCheckpointId !== "v0";
+    if (lastCheckpointId !== "v0") {
       core3.info(`Last successful checkpoint: ${lastCheckpointId}`);
     } else {
-      core3.info("No previous checkpoint found for this job");
+      core3.info("No previous checkpoint found for this job, defaulting initial checkpoint to v0");
     }
     core3.setOutput("sprite-name", sprite.name);
     core3.setOutput("job-key", jobKey);

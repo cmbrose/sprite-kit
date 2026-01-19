@@ -4,13 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       force_failure_step:
-        description: 'Which step should fail on first attempt? (setup/build/test/none)'
+        description: 'Which step should fail on first attempt? (setup/install/build/test/none)'
         required: false
         default: 'none'
         type: choice
         options:
           - none
           - setup
+          - install
           - build
           - test
 
@@ -49,7 +50,7 @@ jobs:
           step-key: clone-vscode
           run: |
             set -e
-            
+
             echo "🔄 Cloning microsoft/vscode repository..."
             
             # Clone the repository
@@ -60,16 +61,39 @@ jobs:
             echo "📍 Cloned commit: $(git rev-parse --short HEAD)"
             echo "📂 Repository size: $(du -sh . | cut -f1)"
 
-      - name: 📦 Setup Dependencies  
-        id: setup
+      - name: ⚙️ Setup Node.js
+        id: node-setup
         uses: ./run
         with:
-          step-key: setup-deps
-          workdir: vscode
+          step-key: setup-nodejs
           run: |
             set -e
 
-            echo "📦 Installing VSCode dependencies..."
+            echo "🔧 Setting up Node.js v22.21.1 using nvm..."
+            
+            # Install and use Node.js v22.21.1 via nvm
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            nvm install 22.21.1
+            nvm use 22.21.1
+            nvm alias default 22.21.1
+            
+            # Verify installation
+            node --version
+            npm --version
+            echo "✅ Node.js v22.21.1 installed and activated via nvm!"
+
+      - name: Install System Dependencies
+        id: system-deps
+        uses: ./run
+        with:
+          step-key: install-system-deps
+          run: |
+            set -e
+
+            echo "🔧 Installing system dependencies for VSCode..."
             
             # Simulate failure if requested
             if [ "${{ github.event.inputs.force_failure_step }}" = "setup" ] && [ "${{ github.run_attempt }}" = "1" ]; then
@@ -77,6 +101,7 @@ jobs:
               exit 1
             fi
 
+            sudo apt-get update
             sudo apt-get install -y \
               build-essential \
               g++ \
@@ -86,11 +111,30 @@ jobs:
               libkrb5-dev \
               python-is-python3
             
+            echo "✅ System dependencies installed successfully!"
+
+      - name: 📦 Install NPM Dependencies  
+        id: setup
+        uses: ./run
+        with:
+          step-key: setup-npm-deps
+          workdir: vscode
+          run: |
+            set -e
+
+            # Simulate failure if requested
+            if [ "${{ github.event.inputs.force_failure_step }}" = "install" ] && [ "${{ github.run_attempt }}" = "1" ]; then
+              echo "💥 SIMULATED FAILURE: Install failing on first attempt (as requested)"
+              exit 1
+            fi
+
+            echo "📦 Installing NPM dependencies..."
+            
             # Install dependencies
             echo "⬇️  Running npm install..."
             npm install --no-audit --no-fund
             
-            echo "✅ Dependencies installed successfully!"
+            echo "✅ NPM dependencies installed successfully!"
             echo "📊 node_modules size: $(du -sh node_modules | cut -f1)"
             echo "📦 Total packages: $(find node_modules -name 'package.json' | wc -l)"
 

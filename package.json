@@ -2,7 +2,6 @@
     "name": "sprite-kit",
     "version": "1.0.0",
     "description": "GitHub Actions for Sprite-backed persistent CI steps",
-    "type": "module",
     "scripts": {
         "build": "npm run build:init && npm run build:run && npm run build:clean",
         "build:init": "esbuild src/init/index.ts --bundle --platform=node --target=node20 --outfile=init/dist/index.js --sourcemap",

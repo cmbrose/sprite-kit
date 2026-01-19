@@ -19724,10 +19724,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("error", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.error = error;
-    function warning2(message, properties = {}) {
+    function warning3(message, properties = {}) {
       (0, command_1.issueCommand)("warning", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.warning = warning2;
+    exports2.warning = warning3;
     function notice(message, properties = {}) {
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
@@ -27507,7 +27507,7 @@ __export(run_exports, {
   validateInputs: () => validateInputs
 });
 module.exports = __toCommonJS(run_exports);
-var core2 = __toESM(require_core());
+var core3 = __toESM(require_core());
 
 // node_modules/@fly/sprites/dist/exec.js
 var import_node_events2 = require("node:events");
@@ -28418,6 +28418,7 @@ async function restoreCheckpoint(sprite, comment) {
 }
 
 // src/common/withApiRetry.ts
+var core2 = __toESM(require_core());
 async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
   let attempt = 0;
   while (true) {
@@ -28426,8 +28427,8 @@ async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
     } catch (error) {
       const err = error;
       if (err.response && err.response.status && err.response.status >= 500) {
-        if (attempt < retries) {
-          console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+        if (attempt <= retries) {
+          core2.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
           attempt++;
         }
       }
@@ -28445,20 +28446,20 @@ if (typeof globalThis.WebSocket === "undefined") {
     const ws = require_ws();
     globalThis.WebSocket = ws.WebSocket || ws.default || ws;
   } catch (error) {
-    console.warn("WebSocket polyfill failed to load:", error);
+    core3.warning(`WebSocket polyfill failed to load: ${error}`);
   }
 }
 function getInputs() {
   return {
-    run: core2.getInput("run", { required: true }),
-    stepKey: core2.getInput("step-key") || process.env.GITHUB_ACTION,
-    token: core2.getInput("token") || process.env.SPRITES_TOKEN,
-    apiUrl: core2.getInput("api-url") || process.env.SPRITES_API_URL,
-    spriteName: core2.getInput("sprite-name") || process.env.SPRITE_NAME,
-    jobKey: core2.getInput("job-key") || process.env.SPRITE_JOB_KEY,
-    runId: core2.getInput("run-id") || process.env.SPRITE_RUN_ID,
-    lastCheckpointId: core2.getInput("last-checkpoint-id") || process.env.SPRITE_LAST_CHECKPOINT_ID,
-    workdir: core2.getInput("workdir")
+    run: core3.getInput("run", { required: true }),
+    stepKey: core3.getInput("step-key") || process.env.GITHUB_ACTION,
+    token: core3.getInput("token") || process.env.SPRITES_TOKEN,
+    apiUrl: core3.getInput("api-url") || process.env.SPRITES_API_URL,
+    spriteName: core3.getInput("sprite-name") || process.env.SPRITE_NAME,
+    jobKey: core3.getInput("job-key") || process.env.SPRITE_JOB_KEY,
+    runId: core3.getInput("run-id") || process.env.SPRITE_RUN_ID,
+    lastCheckpointId: core3.getInput("last-checkpoint-id") || process.env.SPRITE_LAST_CHECKPOINT_ID,
+    workdir: core3.getInput("workdir")
   };
 }
 function validateInputs(inputs) {
@@ -28502,11 +28503,11 @@ async function maybeRestore(sprite, lastCheckpointId, currentCheckpointMetadata)
     if (!metadata || !metadataEquals(metadata, currentCheckpointMetadata)) {
       return false;
     }
-    core2.info(`Restoring from checkpoint: ${lastCheckpointId}`);
+    core3.info(`Restoring from checkpoint: ${lastCheckpointId}`);
     await restoreCheckpoint(sprite, lastCheckpointId);
     return true;
   } catch (error) {
-    core2.warning(`Failed to restore checkpoint: ${error}`);
+    core3.warning(`Failed to restore checkpoint: ${error}`);
     return false;
   }
 }
@@ -28520,8 +28521,8 @@ async function run(inputsOverride) {
     const inputs = validateInputs(maybeInputs);
     const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
     const { spriteName, runId, jobKey, stepKey, lastCheckpointId } = inputs;
-    core2.info(`Step key: ${stepKey}`);
-    core2.info(`Sprite name: ${spriteName}`);
+    core3.info(`Step key: ${stepKey}`);
+    core3.info(`Sprite name: ${spriteName}`);
     const sprite = await withApiRetry(() => client.getSprite(spriteName));
     const currentCheckpointMetadata = { runId, jobKey, stepKey };
     restored = await maybeRestore(sprite, lastCheckpointId, currentCheckpointMetadata);
@@ -28532,13 +28533,13 @@ async function run(inputsOverride) {
       stepKey
     );
     if (skip && existingCheckpointId) {
-      core2.info(`Step "${stepKey}" already completed, skipping execution`);
+      core3.info(`Step "${stepKey}" already completed, skipping execution`);
       skipped = true;
       checkpointId = existingCheckpointId;
       return;
     }
-    core2.info(`Executing step: ${stepKey}`);
-    core2.startGroup(`Running command:`);
+    core3.info(`Executing step: ${stepKey}`);
+    core3.startGroup(`Running command:`);
     let cwd = inputs.workdir;
     if (cwd?.startsWith("/") === false) {
       cwd = `/home/sprite/${cwd}`;
@@ -28547,31 +28548,31 @@ async function run(inputsOverride) {
       cwd
     });
     command.stdout.on("data", (data) => {
-      core2.info(data.toString());
+      core3.info(data.toString());
     });
     command.stderr.on("data", (data) => {
-      core2.info(data.toString());
+      core3.info(data.toString());
     });
     exitCode = await command.wait();
     if (exitCode !== 0) {
       throw new Error(`Command exited with code ${exitCode}`);
     }
-    core2.endGroup();
+    core3.endGroup();
     const comment = formatCheckpointComment({ runId, jobKey, stepKey });
     checkpointId = await createCheckpoint(sprite, comment);
-    core2.exportVariable("SPRITE_LAST_CHECKPOINT_ID", checkpointId);
-    core2.info(`Step "${stepKey}" completed successfully`);
+    core3.exportVariable("SPRITE_LAST_CHECKPOINT_ID", checkpointId);
+    core3.info(`Step "${stepKey}" completed successfully`);
   } catch (error) {
     if (error instanceof Error) {
-      core2.setFailed(error.message);
+      core3.setFailed(error.message);
     } else {
-      core2.setFailed("An unknown error occurred: " + String(error));
+      core3.setFailed("An unknown error occurred: " + String(error));
     }
   } finally {
-    core2.setOutput("checkpoint-id", checkpointId);
-    core2.setOutput("skipped", skipped.toString());
-    core2.setOutput("restored", restored.toString());
-    core2.setOutput("exit-code", exitCode.toString());
+    core3.setOutput("checkpoint-id", checkpointId);
+    core3.setOutput("skipped", skipped.toString());
+    core3.setOutput("restored", restored.toString());
+    core3.setOutput("exit-code", exitCode.toString());
   }
 }
 run();

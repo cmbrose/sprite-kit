@@ -19724,10 +19724,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("error", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.error = error;
-    function warning2(message, properties = {}) {
+    function warning3(message, properties = {}) {
       (0, command_1.issueCommand)("warning", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.warning = warning2;
+    exports2.warning = warning3;
     function notice(message, properties = {}) {
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
@@ -27505,7 +27505,7 @@ __export(init_exports, {
   run: () => run
 });
 module.exports = __toCommonJS(init_exports);
-var core2 = __toESM(require_core());
+var core3 = __toESM(require_core());
 var github = __toESM(require_github());
 
 // node_modules/@fly/sprites/dist/exec.js
@@ -28379,6 +28379,7 @@ function findLastCheckpointForJob(checkpoints, runId, jobKey) {
 }
 
 // src/common/withApiRetry.ts
+var core2 = __toESM(require_core());
 async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
   let attempt = 0;
   while (true) {
@@ -28387,8 +28388,8 @@ async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
     } catch (error) {
       const err = error;
       if (err.response && err.response.status && err.response.status >= 500) {
-        if (attempt < retries) {
-          console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+        if (attempt <= retries) {
+          core2.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
           attempt++;
         }
       }
@@ -28406,7 +28407,7 @@ if (typeof globalThis.WebSocket === "undefined") {
     const ws = require_ws();
     globalThis.WebSocket = ws.WebSocket || ws.default || ws;
   } catch (error) {
-    console.warn("WebSocket polyfill failed to load:", error);
+    core3.warning(`WebSocket polyfill failed to load: ${error}`);
   }
 }
 async function getOrCreateSprite(client, spriteName, expectExist) {
@@ -28414,17 +28415,17 @@ async function getOrCreateSprite(client, spriteName, expectExist) {
     try {
       return await withApiRetry(() => client.getSprite(spriteName));
     } catch (error) {
-      console.warn("Failed to get sprite:", error);
+      core3.warning(`Failed to get sprite: ${error}`);
     }
   }
   return await withApiRetry(() => client.createSprite(spriteName));
 }
 function getInputs() {
   return {
-    token: core2.getInput("token") || process.env.SPRITES_TOKEN,
-    apiUrl: core2.getInput("api-url") || process.env.SPRITES_API_URL,
-    jobKey: core2.getInput("job-key"),
-    matrixJson: core2.getInput("matrix")
+    token: core3.getInput("token") || process.env.SPRITES_TOKEN,
+    apiUrl: core3.getInput("api-url") || process.env.SPRITES_API_URL,
+    jobKey: core3.getInput("job-key"),
+    matrixJson: core3.getInput("matrix")
   };
 }
 function buildGitHubContext(inputs, ghContext = github.context) {
@@ -28433,7 +28434,7 @@ function buildGitHubContext(inputs, ghContext = github.context) {
     try {
       matrix = JSON.parse(inputs.matrixJson);
     } catch (error) {
-      core2.warning(`Failed to parse matrix JSON: ${error}`);
+      core3.warning(`Failed to parse matrix JSON: ${error}`);
     }
   }
   return {
@@ -28458,35 +28459,35 @@ async function run(ghContext) {
     const spriteName = generateSpriteName(githubContext);
     const jobKey = inputs.jobKey || deriveJobKey(githubContext);
     const runId = githubContext.runId;
-    core2.info(`Sprite name: ${spriteName}`);
-    core2.info(`Job key: ${jobKey}`);
-    core2.info(`Run ID: ${runId}`);
+    core3.info(`Sprite name: ${spriteName}`);
+    core3.info(`Job key: ${jobKey}`);
+    core3.info(`Run ID: ${runId}`);
     const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
     const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
     const checkpoints = await sprite.listCheckpoints();
-    core2.info(`Found ${checkpoints.length} existing checkpoints`);
+    core3.info(`Found ${checkpoints.length} existing checkpoints`);
     const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
     const needsRestore = lastCheckpointId !== null && checkpoints.length > 0;
     if (lastCheckpointId) {
-      core2.info(`Last successful checkpoint: ${lastCheckpointId}`);
+      core3.info(`Last successful checkpoint: ${lastCheckpointId}`);
     } else {
-      core2.info("No previous checkpoint found for this job");
+      core3.info("No previous checkpoint found for this job");
     }
-    core2.setOutput("sprite-name", sprite.name);
-    core2.setOutput("job-key", jobKey);
-    core2.setOutput("run-id", runId);
-    core2.setOutput("last-checkpoint-id", lastCheckpointId || "");
-    core2.setOutput("needs-restore", needsRestore.toString());
-    core2.exportVariable("SPRITE_NAME", sprite.name);
-    core2.exportVariable("SPRITE_JOB_KEY", jobKey);
-    core2.exportVariable("SPRITE_RUN_ID", runId);
-    core2.exportVariable("SPRITE_LAST_CHECKPOINT_ID", lastCheckpointId || "");
-    core2.info("Init action completed successfully");
+    core3.setOutput("sprite-name", sprite.name);
+    core3.setOutput("job-key", jobKey);
+    core3.setOutput("run-id", runId);
+    core3.setOutput("last-checkpoint-id", lastCheckpointId || "");
+    core3.setOutput("needs-restore", needsRestore.toString());
+    core3.exportVariable("SPRITE_NAME", sprite.name);
+    core3.exportVariable("SPRITE_JOB_KEY", jobKey);
+    core3.exportVariable("SPRITE_RUN_ID", runId);
+    core3.exportVariable("SPRITE_LAST_CHECKPOINT_ID", lastCheckpointId || "");
+    core3.info("Init action completed successfully");
   } catch (error) {
     if (error instanceof Error) {
-      core2.setFailed(error.message);
+      core3.setFailed(error.message);
     } else {
-      core2.setFailed("An unknown error occurred" + String(error));
+      core3.setFailed("An unknown error occurred" + String(error));
     }
   }
 }

@@ -19,7 +19,7 @@ if (typeof globalThis.WebSocket === 'undefined') {
         const ws = require('ws');
         globalThis.WebSocket = ws.WebSocket || ws.default || ws;
     } catch (error) {
-        console.warn('WebSocket polyfill failed to load:', error);
+        core.warning(`WebSocket polyfill failed to load: ${error}`);
     }
 }
 

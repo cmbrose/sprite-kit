@@ -19724,10 +19724,10 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
       (0, command_1.issueCommand)("error", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
     exports2.error = error;
-    function warning2(message, properties = {}) {
+    function warning3(message, properties = {}) {
       (0, command_1.issueCommand)("warning", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
-    exports2.warning = warning2;
+    exports2.warning = warning3;
     function notice(message, properties = {}) {
       (0, command_1.issueCommand)("notice", (0, utils_1.toCommandProperties)(properties), message instanceof Error ? message.toString() : message);
     }
@@ -27510,7 +27510,7 @@ __export(clean_exports, {
   validateInputs: () => validateInputs
 });
 module.exports = __toCommonJS(clean_exports);
-var core = __toESM(require_core());
+var core2 = __toESM(require_core());
 var github = __toESM(require_github());
 
 // node_modules/@fly/sprites/dist/exec.js
@@ -28314,6 +28314,7 @@ var SpritesClient = class {
 };
 
 // src/common/withApiRetry.ts
+var core = __toESM(require_core());
 async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
   let attempt = 0;
   while (true) {
@@ -28322,8 +28323,8 @@ async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
     } catch (error) {
       const err = error;
       if (err.response && err.response.status && err.response.status >= 500) {
-        if (attempt < retries) {
-          console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+        if (attempt <= retries) {
+          core.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
           attempt++;
         }
       }
@@ -28341,23 +28342,23 @@ if (typeof globalThis.WebSocket === "undefined") {
     const ws = require_ws();
     globalThis.WebSocket = ws.WebSocket || ws.default || ws;
   } catch (error) {
-    console.warn("WebSocket polyfill failed to load:", error);
+    core2.warning(`WebSocket polyfill failed to load: ${error}`);
   }
 }
 function getInputs() {
-  const maxAgeInput = core.getInput("max-age") || "24";
-  const dryRunInput = core.getInput("dry-run") || "false";
-  const modeInput = core.getInput("mode");
+  const maxAgeInput = core2.getInput("max-age") || "24";
+  const dryRunInput = core2.getInput("dry-run") || "false";
+  const modeInput = core2.getInput("mode");
   const spriteNameFromEnv = process.env.SPRITE_NAME;
   const mode = modeInput || (spriteNameFromEnv ? "current" : "global");
   return {
-    token: core.getInput("token") || process.env.SPRITES_TOKEN,
-    apiUrl: core.getInput("api-url") || process.env.SPRITES_API_URL,
+    token: core2.getInput("token") || process.env.SPRITES_TOKEN,
+    apiUrl: core2.getInput("api-url") || process.env.SPRITES_API_URL,
     maxAge: parseInt(maxAgeInput, 10),
     dryRun: dryRunInput.toLowerCase() === "true",
-    spritePrefix: core.getInput("sprite-prefix"),
+    spritePrefix: core2.getInput("sprite-prefix"),
     mode,
-    spriteName: core.getInput("sprite-name") || spriteNameFromEnv
+    spriteName: core2.getInput("sprite-name") || spriteNameFromEnv
   };
 }
 function validateInputs(inputs) {
@@ -28411,14 +28412,14 @@ async function cleanCurrentSprite(client, spriteName, dryRun) {
   try {
     const sprite = await withApiRetry(() => client.getSprite(spriteName));
     if (dryRun) {
-      core.info(`Would delete current workflow sprite: ${sprite.name}`);
+      core2.info(`Would delete current workflow sprite: ${sprite.name}`);
       return { cleaned: false, found: true };
     }
     await withApiRetry(() => client.deleteSprite(spriteName));
-    core.info(`\u2713 Deleted current workflow sprite: ${sprite.name}`);
+    core2.info(`\u2713 Deleted current workflow sprite: ${sprite.name}`);
     return { cleaned: true, found: true };
   } catch (error) {
-    core.warning(`Failed to delete current workflow sprite: ${error}`);
+    core2.warning(`Failed to delete current workflow sprite: ${error}`);
     return { cleaned: false, found: true };
   }
 }
@@ -28430,9 +28431,9 @@ async function clean(inputsOverride) {
     validateInputs(inputs);
     const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
     if (inputs.mode === "current") {
-      core.info("Running in current workflow mode");
-      core.info(`Sprite Name: ${inputs.spriteName || "N/A"}`);
-      core.info(`Dry run: ${inputs.dryRun}`);
+      core2.info("Running in current workflow mode");
+      core2.info(`Sprite Name: ${inputs.spriteName || "N/A"}`);
+      core2.info(`Dry run: ${inputs.dryRun}`);
       if (!inputs.spriteName) {
         throw new Error("No sprite information found in action state. Make sure init action was run first.");
       }
@@ -28444,54 +28445,54 @@ async function clean(inputsOverride) {
       spritesFound = result.found ? 1 : 0;
       spritesCleaned = result.cleaned ? 1 : 0;
       const action = inputs.dryRun ? "would be deleted" : result.cleaned ? "deleted" : "failed to delete";
-      core.info(`Current workflow sprite ${action}`);
+      core2.info(`Current workflow sprite ${action}`);
     } else {
-      core.info("Running in global cleanup mode");
+      core2.info("Running in global cleanup mode");
       const spritePrefix = inputs.spritePrefix || getDefaultSpritePrefix();
-      core.info(`Looking for sprites with prefix: ${spritePrefix}`);
-      core.info(`Max age: ${inputs.maxAge} hours`);
-      core.info(`Dry run: ${inputs.dryRun}`);
+      core2.info(`Looking for sprites with prefix: ${spritePrefix}`);
+      core2.info(`Max age: ${inputs.maxAge} hours`);
+      core2.info(`Dry run: ${inputs.dryRun}`);
       const spritesToClean = await getSpritesToClean(client, spritePrefix, inputs.maxAge);
       spritesFound = spritesToClean.length;
       if (spritesFound === 0) {
-        core.info("No old sprites found to clean up");
+        core2.info("No old sprites found to clean up");
         return { spritesCleaned: 0, spritesFound: 0, dryRun: inputs.dryRun, mode: inputs.mode };
       }
-      core.info(`Found ${spritesFound} old sprites to clean up`);
+      core2.info(`Found ${spritesFound} old sprites to clean up`);
       if (inputs.dryRun) {
-        core.startGroup("Sprites that would be deleted (dry run)");
+        core2.startGroup("Sprites that would be deleted (dry run)");
         for (const sprite of spritesToClean) {
-          core.info(`- ${sprite.name} - created ${sprite.createdAt}`);
+          core2.info(`- ${sprite.name} - created ${sprite.createdAt}`);
         }
-        core.endGroup();
+        core2.endGroup();
         return { spritesCleaned: 0, spritesFound, dryRun: true, mode: inputs.mode };
       }
-      core.startGroup("Deleting old sprites");
+      core2.startGroup("Deleting old sprites");
       const deletePromises = spritesToClean.map(async (sprite) => {
         try {
           await client.deleteSprite(sprite.name);
-          core.info(`\u2713 Deleted sprite: ${sprite.name}`);
+          core2.info(`\u2713 Deleted sprite: ${sprite.name}`);
           return true;
         } catch (error) {
-          core.warning(`\u2717 Failed to delete sprite ${sprite.name}: ${error}`);
+          core2.warning(`\u2717 Failed to delete sprite ${sprite.name}: ${error}`);
           return false;
         }
       });
       const results = await Promise.all(deletePromises);
       spritesCleaned = results.filter((success) => success).length;
-      core.endGroup();
+      core2.endGroup();
       const failed = spritesFound - spritesCleaned;
       if (failed > 0) {
-        core.warning(`${failed} sprites failed to delete`);
+        core2.warning(`${failed} sprites failed to delete`);
       }
-      core.info(`Successfully cleaned up ${spritesCleaned} out of ${spritesFound} old sprites`);
+      core2.info(`Successfully cleaned up ${spritesCleaned} out of ${spritesFound} old sprites`);
     }
     return { spritesCleaned, spritesFound, dryRun: inputs.dryRun, mode: inputs.mode };
   } catch (error) {
     if (error instanceof Error) {
-      core.setFailed(error.message);
+      core2.setFailed(error.message);
     } else {
-      core.setFailed("An unknown error occurred: " + String(error));
+      core2.setFailed("An unknown error occurred: " + String(error));
     }
     throw error;
   }
@@ -28499,10 +28500,10 @@ async function clean(inputsOverride) {
 async function run(inputsOverride) {
   try {
     const result = await clean(inputsOverride);
-    core.setOutput("sprites-cleaned", result.spritesCleaned.toString());
-    core.setOutput("sprites-found", result.spritesFound.toString());
-    core.setOutput("dry-run", result.dryRun.toString());
-    core.setOutput("mode", result.mode);
+    core2.setOutput("sprites-cleaned", result.spritesCleaned.toString());
+    core2.setOutput("sprites-found", result.spritesFound.toString());
+    core2.setOutput("dry-run", result.dryRun.toString());
+    core2.setOutput("mode", result.mode);
   } catch {
   }
 }

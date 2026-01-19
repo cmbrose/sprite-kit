@@ -1,3 +1,5 @@
+import * as core from '@actions/core';
+
 export async function withApiRetry<T>(
     fn: () => Promise<T>,
     retries: number = 2,
@@ -11,8 +13,8 @@ export async function withApiRetry<T>(
         } catch (error) {
             const err = error as { response?: { status?: number } };
             if (err.response && err.response.status && err.response.status >= 500) {
-                if (attempt < retries) {
-                    console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+                if (attempt <= retries) {
+                    core.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
                     attempt++;
                 }
             }

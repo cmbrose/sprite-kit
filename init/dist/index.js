@@ -28378,6 +28378,29 @@ function findLastCheckpointForJob(checkpoints, runId, jobKey) {
   return null;
 }
 
+// src/common/withApiRetry.ts
+async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
+  let attempt = 0;
+  let lastError;
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.response && error.response.status >= 500) {
+        if (attempt < retries) {
+          console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+          attempt++;
+          await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
+          continue;
+        }
+      }
+      lastError = error;
+      break;
+    }
+  }
+  throw lastError;
+}
+
 // src/init/index.ts
 if (typeof globalThis.WebSocket === "undefined") {
   try {
@@ -28386,6 +28409,16 @@ if (typeof globalThis.WebSocket === "undefined") {
   } catch (error) {
     console.warn("WebSocket polyfill failed to load:", error);
   }
+}
+async function getOrCreateSprite(client, spriteName, expectExist) {
+  if (expectExist) {
+    try {
+      return await withApiRetry(() => client.getSprite(spriteName));
+    } catch (error) {
+      console.warn("Failed to get sprite:", error);
+    }
+  }
+  return await withApiRetry(() => client.createSprite(spriteName));
 }
 function getInputs() {
   return {
@@ -28410,7 +28443,8 @@ function buildGitHubContext(inputs, ghContext = github.context) {
     workflow: ghContext.workflow,
     runId: ghContext.runId.toString(),
     job: ghContext.job,
-    matrix
+    matrix,
+    runAttempt: ghContext.runAttempt
   };
 }
 async function run(ghContext) {
@@ -28429,12 +28463,7 @@ async function run(ghContext) {
     core2.info(`Job key: ${jobKey}`);
     core2.info(`Run ID: ${runId}`);
     const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
-    let sprite;
-    if (github.context.runAttempt === 1) {
-      sprite = await client.createSprite(spriteName);
-    } else {
-      sprite = await client.getSprite(spriteName);
-    }
+    const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
     const checkpoints = await sprite.listCheckpoints();
     core2.info(`Found ${checkpoints.length} existing checkpoints`);
     const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);

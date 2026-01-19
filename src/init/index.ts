@@ -8,6 +8,7 @@ import {
     GitHubContext,
     InitInputs
 } from '../common/index.js';
+import { withApiRetry } from '../common/withApiRetry.js';
 
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {
@@ -17,6 +18,22 @@ if (typeof globalThis.WebSocket === 'undefined') {
     } catch (error) {
         console.warn('WebSocket polyfill failed to load:', error);
     }
+}
+
+async function getOrCreateSprite(
+    client: SpritesClient,
+    spriteName: string,
+    expectExist: boolean
+): Promise<Sprite> {
+    if (expectExist) {
+        try {
+            return await withApiRetry(() => client.getSprite(spriteName));
+        } catch (error) {
+            console.warn('Failed to get sprite:', error);
+        }
+    }
+
+    return await withApiRetry(() => client.createSprite(spriteName));
 }
 
 /**
@@ -52,6 +69,7 @@ export function buildGitHubContext(inputs: InitInputs, ghContext = github.contex
         runId: ghContext.runId.toString(),
         job: ghContext.job,
         matrix,
+        runAttempt: ghContext.runAttempt,
     };
 }
 
@@ -84,13 +102,7 @@ export async function run(
         // Initialize client
         const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
 
-        // Create or get sprite
-        let sprite: Sprite;
-        if (github.context.runAttempt === 1) {
-            sprite = await client.createSprite(spriteName);
-        } else {
-            sprite = await client.getSprite(spriteName);
-        }
+        const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
 
         // List existing checkpoints
         const checkpoints = await sprite.listCheckpoints();

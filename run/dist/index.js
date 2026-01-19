@@ -28314,6 +28314,9 @@ var import_github = __toESM(require_github());
 
 // src/common/checkpoint.ts
 var core = __toESM(require_core());
+function metadataEquals(a, b) {
+  return a.runId === b.runId && a.jobKey === b.jobKey && a.stepKey === b.stepKey;
+}
 function formatCheckpointComment(metadata) {
   return `ghrun=${metadata.runId};job=${metadata.jobKey};step=${metadata.stepKey}`;
 }
@@ -28414,6 +28417,29 @@ async function restoreCheckpoint(sprite, comment) {
   }
 }
 
+// src/common/withApiRetry.ts
+async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
+  let attempt = 0;
+  let lastError;
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (error2) {
+      if (error2.response && error2.response.status >= 500) {
+        if (attempt < retries) {
+          console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+          attempt++;
+          await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
+          continue;
+        }
+      }
+      lastError = error2;
+      break;
+    }
+  }
+  throw lastError;
+}
+
 // src/run/index.ts
 if (typeof globalThis.WebSocket === "undefined") {
   try {
@@ -28467,15 +28493,14 @@ async function shouldSkipStep(sprite, runId, jobKey, stepKey) {
     existingCheckpointId
   };
 }
-async function maybeRestore(sprite, lastCheckpointId, runId, jobKey, stepKey) {
+async function maybeRestore(sprite, lastCheckpointId, currentCheckpointMetadata) {
   if (!lastCheckpointId) {
     return false;
   }
   try {
     const checkpoint = await sprite.getCheckpoint(lastCheckpointId);
     const metadata = parseCheckpointComment(checkpoint.comment);
-    if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey || metadata.stepKey !== stepKey) {
-      core2.warning("Checkpoint does not match current run/job/step, skipping restore");
+    if (!metadata || !metadataEquals(metadata, currentCheckpointMetadata)) {
       return false;
     }
     core2.info(`Restoring from checkpoint: ${lastCheckpointId}`);
@@ -28498,8 +28523,9 @@ async function run(inputsOverride) {
     const { spriteName, runId, jobKey, stepKey, lastCheckpointId } = inputs;
     core2.info(`Step key: ${stepKey}`);
     core2.info(`Sprite name: ${spriteName}`);
-    const sprite = await client.getSprite(spriteName);
-    restored = await maybeRestore(sprite, lastCheckpointId, runId, jobKey, stepKey);
+    const sprite = await withApiRetry(() => client.getSprite(spriteName));
+    const currentCheckpointMetadata = { runId, jobKey, stepKey };
+    restored = await maybeRestore(sprite, lastCheckpointId, currentCheckpointMetadata);
     const { skip, existingCheckpointId } = await shouldSkipStep(
       sprite,
       runId,
@@ -28514,13 +28540,9 @@ async function run(inputsOverride) {
     }
     core2.info(`Executing step: ${stepKey}`);
     core2.startGroup(`Running command:`);
-    const command = sprite.spawn(
-      "/bin/bash",
-      ["-c", inputs.run],
-      {
-        cwd: inputs.workdir
-      }
-    );
+    const command = sprite.spawn("/bin/bash", ["-c", inputs.run], {
+      cwd: inputs.workdir
+    });
     command.stdout.on("data", (data) => {
       core2.info("out: " + data.toString());
     });

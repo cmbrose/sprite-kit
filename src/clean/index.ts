@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { SpriteInfo, SpritesClient } from '@fly/sprites';
 import { CleanInputs, CleanOutputs } from '../common/index.js';
+import { withApiRetry } from '../common/withApiRetry.js';
 
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {
@@ -126,14 +127,14 @@ export async function cleanCurrentSprite(
 ): Promise<{ cleaned: boolean; found: boolean }> {
     try {
         // Verify sprite exists
-        const sprite = await client.getSprite(spriteName);
+        const sprite = await withApiRetry(() => client.getSprite(spriteName));
 
         if (dryRun) {
             core.info(`Would delete current workflow sprite: ${sprite.name}`);
             return { cleaned: false, found: true };
         }
 
-        await client.deleteSprite(spriteName);
+        await withApiRetry(() => client.deleteSprite(spriteName));
         core.info(`✓ Deleted current workflow sprite: ${sprite.name}`);
         return { cleaned: true, found: true };
 

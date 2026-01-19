@@ -28313,6 +28313,29 @@ var SpritesClient = class {
   }
 };
 
+// src/common/withApiRetry.ts
+async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
+  let attempt = 0;
+  let lastError;
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.response && error.response.status >= 500) {
+        if (attempt < retries) {
+          console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+          attempt++;
+          await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
+          continue;
+        }
+      }
+      lastError = error;
+      break;
+    }
+  }
+  throw lastError;
+}
+
 // src/clean/index.ts
 if (typeof globalThis.WebSocket === "undefined") {
   try {
@@ -28387,12 +28410,12 @@ async function getSpritesToClean(client, prefix, maxAgeHours) {
 }
 async function cleanCurrentSprite(client, spriteName, dryRun) {
   try {
-    const sprite = await client.getSprite(spriteName);
+    const sprite = await withApiRetry(() => client.getSprite(spriteName));
     if (dryRun) {
       core.info(`Would delete current workflow sprite: ${sprite.name}`);
       return { cleaned: false, found: true };
     }
-    await client.deleteSprite(spriteName);
+    await withApiRetry(() => client.deleteSprite(spriteName));
     core.info(`\u2713 Deleted current workflow sprite: ${sprite.name}`);
     return { cleaned: true, found: true };
   } catch (error) {

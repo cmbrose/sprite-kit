@@ -7,7 +7,10 @@ import {
     RunInputs,
     createCheckpoint,
     restoreCheckpoint,
+    CheckpointMetadata,
+    metadataEquals,
 } from '../common/index.js';
+import { withApiRetry } from '../common/withApiRetry.js';
 
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {
@@ -87,9 +90,7 @@ export async function shouldSkipStep(
 export async function maybeRestore(
     sprite: Sprite,
     lastCheckpointId: string | undefined,
-    runId: string,
-    jobKey: string,
-    stepKey: string
+    currentCheckpointMetadata: CheckpointMetadata
 ): Promise<boolean> {
     if (!lastCheckpointId) {
         return false;
@@ -100,8 +101,7 @@ export async function maybeRestore(
         const checkpoint = await sprite.getCheckpoint(lastCheckpointId);
         const metadata = parseCheckpointComment(checkpoint.comment!);
 
-        if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey || metadata.stepKey !== stepKey) {
-            core.warning('Checkpoint does not match current run/job/step, skipping restore');
+        if (!metadata || !metadataEquals(metadata, currentCheckpointMetadata)) {
             return false;
         }
 
@@ -135,10 +135,11 @@ export async function run(
         core.info(`Step key: ${stepKey}`);
         core.info(`Sprite name: ${spriteName}`);
 
-        const sprite = await client.getSprite(spriteName!);
+        const sprite = await withApiRetry(() => client.getSprite(spriteName));
 
         // Restore from last checkpoint if this is a rerun (must happen before skip check)
-        restored = await maybeRestore(sprite, lastCheckpointId, runId, jobKey, stepKey);
+        const currentCheckpointMetadata: CheckpointMetadata = { runId, jobKey, stepKey };
+        restored = await maybeRestore(sprite, lastCheckpointId, currentCheckpointMetadata);
 
         // Check if step should be skipped
         const { skip, existingCheckpointId } = await shouldSkipStep(
@@ -159,12 +160,9 @@ export async function run(
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running command:`);
 
-        const command = sprite.spawn(
-            '/bin/bash',
-            ['-c', inputs.run],
-            {
-                cwd: inputs.workdir,
-            });
+        const command = sprite.spawn('/bin/bash', ['-c', inputs.run], {
+            cwd: inputs.workdir,
+        });
 
         command.stdout.on('data', (data: Buffer) => {
             core.info("out: " + data.toString());

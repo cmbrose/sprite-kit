@@ -11,6 +11,13 @@ export interface CheckpointMetadata {
     stepKey: string;
 }
 
+export function metadataEquals(
+    a: CheckpointMetadata,
+    b: CheckpointMetadata
+): boolean {
+    return a.runId === b.runId && a.jobKey === b.jobKey && a.stepKey === b.stepKey;
+}
+
 /**
  * Format checkpoint metadata into a comment string
  * Format: ghrun={run_id};job={job_key};step={step_key}

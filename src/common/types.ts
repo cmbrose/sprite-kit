@@ -9,6 +9,7 @@ export interface GitHubContext {
     runId: string;
     job: string;
     matrix?: Record<string, unknown>;
+    runAttempt: number;
 }
 
 /**

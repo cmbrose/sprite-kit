@@ -16,7 +16,7 @@ inputs:
   mode:
     description: 'Cleanup mode: "global" for scheduled cleanup of old sprites, "current" for cleaning current workflow sprite. Default is inferred from context.'
     required: false
-    default: 'global'
+    default: ''
   max-age:
     description: 'Maximum age in hours for sprites to keep. Sprites older than this will be deleted. Only applies in global mode. Default: 24'
     required: false

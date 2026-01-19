@@ -35268,7 +35268,7 @@ class SpritesClient {
 function getInputs() {
     const maxAgeInput = core.getInput('max-age') || '24';
     const dryRunInput = core.getInput('dry-run') || 'false';
-    const modeInput = core.getInput('mode') || 'global';
+    const modeInput = core.getInput('mode');
     // If mode is current or if we have environment data but no explicit inputs, use current mode
     const spriteNameFromEnv = process.env.SPRITE_NAME;
     // Auto-detect mode: if we have environment data and no explicit global inputs, use current mode

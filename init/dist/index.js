@@ -30080,77 +30080,334 @@ class SpritesClient {
      * POST /v1/sprites/{name}/checkpoint (singular!)
      * Note: Returns streaming NDJSON but we only care about the final result
      */
+    /**
+     * Create a checkpoint with streaming progress
+     * POST /v1/sprites/{name}/checkpoint
+     * Returns streaming NDJSON with progress events
+     */
     async createCheckpoint(options) {
-        // The API returns streaming NDJSON, but for simplicity we'll parse the complete event
-        // which contains the checkpoint ID
-        const response = await this.request({
-            method: 'POST',
-            path: `/sprites/${encodeURIComponent(options.spriteName)}/checkpoint`,
-            body: { comment: options.comment },
+        return new Promise((resolve, reject) => {
+            const url = new url_1.URL(`${this.apiUrl}/sprites/${encodeURIComponent(options.spriteName)}/checkpoint`);
+            const isHttps = url.protocol === 'https:';
+            const httpModule = isHttps ? https : http;
+            const requestBody = JSON.stringify({ comment: options.comment });
+            const requestOptions = {
+                hostname: url.hostname,
+                port: url.port || (isHttps ? 443 : 80),
+                path: url.pathname,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(requestBody),
+                    Authorization: `Bearer ${this.token}`,
+                    Accept: 'application/x-ndjson',
+                },
+                timeout: 300000, // 5 minute timeout for checkpoint creation
+            };
+            let checkpointId = '';
+            let createTime = '';
+            const req = httpModule.request(requestOptions, (res) => {
+                if (res.statusCode && res.statusCode >= 400) {
+                    let errorBody = '';
+                    res.on('data', (chunk) => {
+                        errorBody += chunk.toString();
+                    });
+                    res.on('end', () => {
+                        reject({
+                            message: `Request failed with status ${res.statusCode}: ${errorBody}`,
+                            status: res.statusCode,
+                            req: {
+                                method: 'POST',
+                                path: url.pathname,
+                            },
+                        });
+                    });
+                    return;
+                }
+                res.on('data', (chunk) => {
+                    const lines = chunk.toString().split('\n').filter(Boolean);
+                    for (const line of lines) {
+                        try {
+                            const event = JSON.parse(line);
+                            if (event.type === 'info') {
+                                core.info(event.data);
+                            }
+                            else if (event.type === 'complete') {
+                                // Extract checkpoint ID from message like "Checkpoint v8 created"
+                                const match = event.data.match(/Checkpoint (\S+) created/);
+                                if (match) {
+                                    checkpointId = match[1];
+                                    createTime = event.time;
+                                }
+                                core.info(event.data);
+                            }
+                            else if (event.type === 'error') {
+                                reject({
+                                    message: event.error,
+                                    req: {
+                                        method: 'POST',
+                                        path: url.pathname,
+                                    },
+                                });
+                            }
+                        }
+                        catch (e) {
+                            // Ignore parse errors
+                        }
+                    }
+                });
+                res.on('end', () => {
+                    if (checkpointId) {
+                        core.info(`Created checkpoint: ${checkpointId}`);
+                        resolve({
+                            id: checkpointId,
+                            create_time: createTime,
+                            comment: options.comment,
+                        });
+                    }
+                    else {
+                        reject({
+                            message: 'Failed to parse checkpoint creation response',
+                            req: {
+                                method: 'POST',
+                                path: url.pathname,
+                            },
+                        });
+                    }
+                });
+                res.on('error', reject);
+            });
+            req.on('error', (error) => {
+                reject({
+                    message: error.message,
+                    code: error.code,
+                    req: {
+                        method: 'POST',
+                        path: url.pathname,
+                    },
+                });
+            });
+            req.on('timeout', () => {
+                req.destroy();
+                reject({
+                    message: 'Request timeout',
+                    code: 'TIMEOUT',
+                    req: {
+                        method: 'POST',
+                        path: url.pathname,
+                    },
+                });
+            });
+            req.write(requestBody);
+            req.end();
         });
-        // Parse the checkpoint ID from the response
-        // The last line should be a "complete" event with data like "Checkpoint v8 created"
-        const lines = response.split('\n').filter((line) => line.trim());
-        const lastLine = lines[lines.length - 1];
-        if (lastLine) {
-            const event = JSON.parse(lastLine);
-            if (event.type === 'complete') {
-                // Extract checkpoint ID from message like "Checkpoint v8 created"
-                const match = event.data.match(/Checkpoint (\S+) created/);
-                const checkpointId = match ? match[1] : 'unknown';
-                core.info(`Created checkpoint: ${checkpointId}`);
-                return {
-                    id: checkpointId,
-                    create_time: event.time,
-                    comment: options.comment,
-                };
-            }
-        }
-        throw new Error('Failed to parse checkpoint creation response');
     }
     /**
-     * Restore from a checkpoint
+     * Restore from a checkpoint with streaming progress
      * POST /v1/sprites/{name}/checkpoints/{checkpoint_id}/restore
-     * Returns streaming NDJSON
+     * Returns streaming NDJSON with progress events
      */
     async restoreCheckpoint(spriteName, checkpointId) {
-        await this.request({
-            method: 'POST',
-            path: `/sprites/${encodeURIComponent(spriteName)}/checkpoints/${encodeURIComponent(checkpointId)}/restore`,
+        return new Promise((resolve, reject) => {
+            const url = new url_1.URL(`${this.apiUrl}/sprites/${encodeURIComponent(spriteName)}/checkpoints/${encodeURIComponent(checkpointId)}/restore`);
+            const isHttps = url.protocol === 'https:';
+            const httpModule = isHttps ? https : http;
+            const requestOptions = {
+                hostname: url.hostname,
+                port: url.port || (isHttps ? 443 : 80),
+                path: url.pathname,
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.token}`,
+                    Accept: 'application/x-ndjson',
+                },
+                timeout: 300000, // 5 minute timeout for restore
+            };
+            const req = httpModule.request(requestOptions, (res) => {
+                if (res.statusCode && res.statusCode >= 400) {
+                    let errorBody = '';
+                    res.on('data', (chunk) => {
+                        errorBody += chunk.toString();
+                    });
+                    res.on('end', () => {
+                        reject({
+                            message: `Request failed with status ${res.statusCode}: ${errorBody}`,
+                            status: res.statusCode,
+                            req: {
+                                method: 'POST',
+                                path: url.pathname,
+                            },
+                        });
+                    });
+                    return;
+                }
+                res.on('data', (chunk) => {
+                    const lines = chunk.toString().split('\n').filter(Boolean);
+                    for (const line of lines) {
+                        try {
+                            const event = JSON.parse(line);
+                            if (event.type === 'info') {
+                                core.info(event.data);
+                            }
+                            else if (event.type === 'complete') {
+                                core.info(event.data);
+                            }
+                            else if (event.type === 'error') {
+                                reject({
+                                    message: event.error,
+                                    req: {
+                                        method: 'POST',
+                                        path: url.pathname,
+                                    },
+                                });
+                            }
+                        }
+                        catch (e) {
+                            // Ignore parse errors
+                        }
+                    }
+                });
+                res.on('end', () => {
+                    core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
+                    resolve();
+                });
+                res.on('error', reject);
+            });
+            req.on('error', (error) => {
+                reject({
+                    message: error.message,
+                    code: error.code,
+                    req: {
+                        method: 'POST',
+                        path: url.pathname,
+                    },
+                });
+            });
+            req.on('timeout', () => {
+                req.destroy();
+                reject({
+                    message: 'Request timeout',
+                    code: 'TIMEOUT',
+                    req: {
+                        method: 'POST',
+                        path: url.pathname,
+                    },
+                });
+            });
+            req.end();
         });
-        core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
     }
     /**
-     * Execute a command in a sprite
-     * POST /v1/sprites/{name}/exec?cmd={cmd}&dir={dir}
+     * Execute a command in a sprite with streaming output
+     * POST /v1/sprites/{name}/exec
+     * Returns streaming NDJSON with stdout/stderr/exit events
      */
     async exec(options) {
         const { spriteName, command, workdir, env } = options;
         core.info(`Executing command in sprite ${spriteName}`);
         core.debug(`Command: ${command}`);
-        // Build query parameters
-        const params = new URLSearchParams();
-        params.append('cmd', command);
-        if (workdir) {
-            params.append('dir', workdir);
-        }
-        if (env) {
-            Object.entries(env).forEach(([key, value]) => {
-                params.append('env', `${key}=${value}`);
-            });
-        }
-        // Execute command and get result
-        const response = await this.request({
-            method: 'POST',
-            path: `/sprites/${encodeURIComponent(spriteName)}/exec?${params.toString()}`,
+        return this.execWithStreaming(spriteName, {
+            command,
+            workdir,
+            env,
         });
-        // Parse response - exact format depends on API
-        // For now, assuming a simple response format
-        return {
-            exitCode: response.exit_code || 0,
-            stdout: response.stdout || '',
-            stderr: response.stderr || '',
-        };
+    }
+    /**
+     * Execute command with streaming stdout/stderr via NDJSON
+     */
+    async execWithStreaming(spriteName, body) {
+        return new Promise((resolve, reject) => {
+            const url = new url_1.URL(`${this.apiUrl}/sprites/${encodeURIComponent(spriteName)}/exec`);
+            const isHttps = url.protocol === 'https:';
+            const httpModule = isHttps ? https : http;
+            const requestBody = JSON.stringify(body);
+            const requestOptions = {
+                hostname: url.hostname,
+                port: url.port || (isHttps ? 443 : 80),
+                path: url.pathname,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(requestBody),
+                    Authorization: `Bearer ${this.token}`,
+                    Accept: 'application/x-ndjson',
+                },
+                timeout: 600000, // 10 minute timeout for exec
+            };
+            let stdout = '';
+            let stderr = '';
+            let exitCode = 0;
+            const req = httpModule.request(requestOptions, (res) => {
+                if (res.statusCode && res.statusCode >= 400) {
+                    let errorBody = '';
+                    res.on('data', (chunk) => {
+                        errorBody += chunk.toString();
+                    });
+                    res.on('end', () => {
+                        reject({
+                            message: `Request failed with status ${res.statusCode}: ${errorBody}`,
+                            status: res.statusCode,
+                            req: {
+                                method: 'POST',
+                                path: url.pathname,
+                            },
+                        });
+                    });
+                    return;
+                }
+                res.on('data', (chunk) => {
+                    const lines = chunk.toString().split('\n').filter(Boolean);
+                    for (const line of lines) {
+                        try {
+                            const event = JSON.parse(line);
+                            if (event.type === 'stdout') {
+                                process.stdout.write(event.data);
+                                stdout += event.data;
+                            }
+                            else if (event.type === 'stderr') {
+                                process.stderr.write(event.data);
+                                stderr += event.data;
+                            }
+                            else if (event.type === 'exit') {
+                                exitCode = event.code;
+                            }
+                        }
+                        catch {
+                            // Not JSON, treat as raw output
+                            process.stdout.write(line);
+                            stdout += line;
+                        }
+                    }
+                });
+                res.on('end', () => {
+                    resolve({ exitCode, stdout, stderr });
+                });
+                res.on('error', reject);
+            });
+            req.on('error', (error) => {
+                reject({
+                    message: error.message,
+                    code: error.code,
+                    req: {
+                        method: 'POST',
+                        path: url.pathname,
+                    },
+                });
+            });
+            req.on('timeout', () => {
+                req.destroy();
+                reject({
+                    message: 'Request timeout',
+                    code: 'TIMEOUT',
+                    req: {
+                        method: 'POST',
+                        path: url.pathname,
+                    },
+                });
+            });
+            req.write(requestBody);
+            req.end();
+        });
     }
     /**
      * Make an HTTP request with retry logic

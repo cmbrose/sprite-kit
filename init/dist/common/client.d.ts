@@ -47,18 +47,28 @@ export declare class SpritesClient {
      * POST /v1/sprites/{name}/checkpoint (singular!)
      * Note: Returns streaming NDJSON but we only care about the final result
      */
+    /**
+     * Create a checkpoint with streaming progress
+     * POST /v1/sprites/{name}/checkpoint
+     * Returns streaming NDJSON with progress events
+     */
     createCheckpoint(options: CreateCheckpointOptions): Promise<Checkpoint>;
     /**
-     * Restore from a checkpoint
+     * Restore from a checkpoint with streaming progress
      * POST /v1/sprites/{name}/checkpoints/{checkpoint_id}/restore
-     * Returns streaming NDJSON
+     * Returns streaming NDJSON with progress events
      */
     restoreCheckpoint(spriteName: string, checkpointId: string): Promise<void>;
     /**
-     * Execute a command in a sprite
-     * POST /v1/sprites/{name}/exec?cmd={cmd}&dir={dir}
+     * Execute a command in a sprite with streaming output
+     * POST /v1/sprites/{name}/exec
+     * Returns streaming NDJSON with stdout/stderr/exit events
      */
     exec(options: ExecOptions): Promise<ExecResult>;
+    /**
+     * Execute command with streaming stdout/stderr via NDJSON
+     */
+    private execWithStreaming;
     /**
      * Make an HTTP request with retry logic
      * Retries on transient errors (5xx, 429, timeouts, network errors)

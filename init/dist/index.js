@@ -28466,7 +28466,7 @@ async function run(ghContext) {
     const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
     const checkpoints = await sprite.listCheckpoints();
     core3.info(`Found ${checkpoints.length} existing checkpoints`);
-    let lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
+    const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
     const needsRestore = lastCheckpointId !== "v0";
     if (lastCheckpointId !== "v0") {
       core3.info(`Last successful checkpoint: ${lastCheckpointId}`);

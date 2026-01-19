@@ -110,7 +110,7 @@ export async function run(
         core.info(`Found ${checkpoints.length} existing checkpoints`);
 
         // Find last successful checkpoint for this job
-        let lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
+        const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
         const needsRestore = lastCheckpointId !== 'v0';
 
         if (lastCheckpointId !== 'v0') {

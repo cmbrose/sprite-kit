@@ -116,12 +116,9 @@ export async function run(
         if (error instanceof Error) {
             core.setFailed(error.message);
         } else {
-            core.setFailed('An unknown error occurred');
+            core.setFailed('An unknown error occurred' + String(error));
         }
     }
 }
 
-// Only run if this is the main module
-if (require.main === module) {
-    run();
-}
+run();

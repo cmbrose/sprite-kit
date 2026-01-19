@@ -187,7 +187,4 @@ export async function run(
     }
 }
 
-// Only run if this is the main module
-if (require.main === module) {
-    run();
-}
+run();

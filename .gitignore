@@ -5,7 +5,7 @@ node_modules/
 dist/
 !init/dist/
 !run/dist/
-!cleanup/dist/
+!clean/dist/
 
 # Coverage
 coverage/

@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "Shared utilities for sprite-kit actions",
     "main": "src/index.ts",
+    "type": "module",
     "types": "src/index.ts",
     "scripts": {},
     "dependencies": {

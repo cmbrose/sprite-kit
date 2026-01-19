@@ -256,7 +256,4 @@ export async function run(inputsOverride?: Partial<CleanInputs>): Promise<void> 
     }
 }
 
-// Only run if this is the main module
-if (require.main === module) {
-    run();
-}
+run();

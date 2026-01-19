@@ -6,16 +6,18 @@
     "workspaces": [
         "common",
         "init",
-        "run"
+        "run",
+        "clean"
     ],
     "scripts": {
         "build": "npm run build --workspaces --if-present",
         "build:init": "npm run build -w init",
         "build:run": "npm run build -w run",
+        "build:clean": "npm run build -w clean",
         "lint": "eslint . --ext .ts",
         "typecheck": "tsc --noEmit",
         "test": "jest",
-        "clean": "rm -rf common/dist init/dist run/dist"
+        "clean": "rm -rf common/dist init/dist run/dist clean/dist"
     },
     "devDependencies": {
         "@types/jest": "^29.5.11",

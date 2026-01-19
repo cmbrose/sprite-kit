@@ -97,8 +97,8 @@ export async function run(
         }
 
         // Set outputs
-        core.setOutput('sprite-name', spriteName);
         core.setOutput('sprite-id', sprite.id);
+        core.setOutput('sprite-name', sprite.name);
         core.setOutput('job-key', jobKey);
         core.setOutput('run-id', runId);
         core.setOutput('last-checkpoint-id', lastCheckpointId || '');
@@ -106,6 +106,7 @@ export async function run(
 
         // Export state for run action
         core.saveState('sprite-id', sprite.id);
+        core.saveState('sprite-name', sprite.name);
         core.saveState('job-key', jobKey);
         core.saveState('run-id', runId);
         core.saveState('last-checkpoint-id', lastCheckpointId || '');

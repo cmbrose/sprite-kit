@@ -19,8 +19,8 @@ inputs:
   api-url:
     description: 'Sprites API URL. Defaults to https://api.sprites.dev'
     required: false
-  sprite-id:
-    description: 'Sprite ID from init action. If not provided, retrieved from action state.'
+  sprite-name:
+    description: 'Sprite name from init action. If not provided, retrieved from action state.'
     required: false
   job-key:
     description: 'Job key from init action. If not provided, retrieved from action state.'

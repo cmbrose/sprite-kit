@@ -91,3 +91,101 @@ export function findLastCheckpointForJob(
 
     return null;
 }
+
+/**
+ * Find checkpoint for a specific step in the current run
+ */
+export function findCheckpointForStep(
+    checkpoints: Array<Checkpoint>,
+    runId: string,
+    jobKey: string,
+    stepKey: string
+): string | null {
+    for (const checkpoint of checkpoints) {
+        if (!checkpoint.comment) {
+            continue;
+        }
+
+        const metadata = parseCheckpointComment(checkpoint.comment);
+        if (
+            metadata &&
+            metadata.runId === runId &&
+            metadata.jobKey === jobKey &&
+            metadata.stepKey === stepKey
+        ) {
+            return checkpoint.id;
+        }
+    }
+    return null;
+}
+
+/**
+ * Process checkpoint data stream and returns the version id
+ */
+export async function processCheckpointStream(stream: Response): Promise<string> {
+    /**
+    [
+        {
+            "data": "Creating checkpoint...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Stopping services...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Saving filesystem state...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Checkpoint v8 created",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "complete"
+        }
+    ]
+    */
+
+    if (!stream.body) {
+        throw new Error('Stream body is null');
+    }
+
+    const reader = stream.body.getReader();
+    const decoder = new TextDecoder();
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim());
+
+            for (const line of lines) {
+                try {
+                    const message = JSON.parse(line);
+
+                    if (message.type === 'complete' && message.data) {
+                        // Extract version from "Checkpoint v8 created" format
+                        const match = message.data.match(/Checkpoint (v\d+) created/);
+                        if (match) {
+                            return match[1];
+                        }
+                    }
+                } catch (e) {
+                    // Skip invalid JSON lines
+                    continue;
+                }
+            }
+        }
+
+        throw new Error('No checkpoint version found in stream');
+    } finally {
+        reader.releaseLock();
+    }
+}

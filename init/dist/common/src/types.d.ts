@@ -37,7 +37,7 @@ export interface RunInputs {
     run: string;
     token?: string;
     apiUrl?: string;
-    spriteId: string;
+    spriteName: string;
     jobKey: string;
     runId: string;
     lastCheckpointId?: string;
@@ -51,5 +51,26 @@ export interface RunOutputs {
     checkpointId: string;
     restored: boolean;
     exitCode: number;
+}
+/**
+ * Clean action inputs
+ */
+export interface CleanInputs {
+    token?: string;
+    apiUrl?: string;
+    maxAge: number;
+    dryRun: boolean;
+    spritePrefix?: string;
+    mode?: 'global' | 'current';
+    spriteName?: string;
+}
+/**
+ * Clean action outputs
+ */
+export interface CleanOutputs {
+    spritesCleaned: number;
+    spritesFound: number;
+    dryRun: boolean;
+    mode: 'global' | 'current';
 }
 //# sourceMappingURL=types.d.ts.map

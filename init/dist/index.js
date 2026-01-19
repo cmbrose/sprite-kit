@@ -30972,6 +30972,88 @@ function findLastCheckpointForJob(checkpoints, runId, jobKey) {
     }
     return null;
 }
+/**
+ * Find checkpoint for a specific step in the current run
+ */
+function findCheckpointForStep(checkpoints, runId, jobKey, stepKey) {
+    for (const checkpoint of checkpoints) {
+        if (!checkpoint.comment) {
+            continue;
+        }
+        const metadata = parseCheckpointComment(checkpoint.comment);
+        if (metadata &&
+            metadata.runId === runId &&
+            metadata.jobKey === jobKey &&
+            metadata.stepKey === stepKey) {
+            return checkpoint.id;
+        }
+    }
+    return null;
+}
+/**
+ * Process checkpoint data stream and returns the version id
+ */
+async function processCheckpointStream(stream) {
+    /**
+    [
+        {
+            "data": "Creating checkpoint...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Stopping services...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Saving filesystem state...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Checkpoint v8 created",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "complete"
+        }
+    ]
+    */
+    if (!stream.body) {
+        throw new Error('Stream body is null');
+    }
+    const reader = stream.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim());
+            for (const line of lines) {
+                try {
+                    const message = JSON.parse(line);
+                    if (message.type === 'complete' && message.data) {
+                        // Extract version from "Checkpoint v8 created" format
+                        const match = message.data.match(/Checkpoint (v\d+) created/);
+                        if (match) {
+                            return match[1];
+                        }
+                    }
+                }
+                catch (e) {
+                    // Skip invalid JSON lines
+                    continue;
+                }
+            }
+        }
+        throw new Error('No checkpoint version found in stream');
+    }
+    finally {
+        reader.releaseLock();
+    }
+}
 
 ;// CONCATENATED MODULE: ../common/src/index.ts
 /**
@@ -31062,14 +31144,15 @@ async function run(ghContext) {
             core.info('No previous checkpoint found for this job');
         }
         // Set outputs
-        core.setOutput('sprite-name', spriteName);
         core.setOutput('sprite-id', sprite.id);
+        core.setOutput('sprite-name', sprite.name);
         core.setOutput('job-key', jobKey);
         core.setOutput('run-id', runId);
         core.setOutput('last-checkpoint-id', lastCheckpointId || '');
         core.setOutput('needs-restore', needsRestore.toString());
         // Export state for run action
         core.saveState('sprite-id', sprite.id);
+        core.saveState('sprite-name', sprite.name);
         core.saveState('job-key', jobKey);
         core.saveState('run-id', runId);
         core.saveState('last-checkpoint-id', lastCheckpointId || '');

@@ -25,4 +25,12 @@ export declare function matchesCheckpoint(comment: string, criteria: Partial<Che
  * Find the last successful checkpoint for a job in the current run
  */
 export declare function findLastCheckpointForJob(checkpoints: Array<Checkpoint>, runId: string, jobKey: string): string | null;
+/**
+ * Find checkpoint for a specific step in the current run
+ */
+export declare function findCheckpointForStep(checkpoints: Array<Checkpoint>, runId: string, jobKey: string, stepKey: string): string | null;
+/**
+ * Process checkpoint data stream and returns the version id
+ */
+export declare function processCheckpointStream(stream: Response): Promise<string>;
 //# sourceMappingURL=checkpoint.d.ts.map

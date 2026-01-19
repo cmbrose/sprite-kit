@@ -1,0 +1,178 @@
+name: Example - Large Scale VSCode Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_failure_step:
+        description: 'Which step should fail on first attempt? (setup/build/test/none)'
+        required: false
+        default: 'none'
+        type: choice
+        options:
+          - none
+          - setup
+          - build
+          - test
+
+env:
+  SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
+
+jobs:
+  vscode-build:
+    name: VSCode Build Demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🚀 Initialize Sprite
+        id: init
+        uses: ./init
+
+      - name: 📊 Show Sprite Info
+        run: |
+          echo "🎯 Sprite Name: ${{ steps.init.outputs.sprite-name }}"
+          echo "🔑 Job Key: ${{ steps.init.outputs.job-key }}"
+          echo "🆔 Run ID: ${{ steps.init.outputs.run-id }}"
+          echo "🔄 Needs Restore: ${{ steps.init.outputs.needs-restore }}"
+          
+          if [ "${{ steps.init.outputs.needs-restore }}" = "true" ]; then
+            echo "✨ This is a retry! The sprite will restore previous progress."
+          else
+            echo "🆕 This is a fresh run. Building from scratch."
+          fi
+
+      - name: 📥 Clone VSCode Repository
+        id: clone
+        uses: ./run
+        with:
+          step-key: clone-vscode
+          run: |
+            echo "🔄 Cloning microsoft/vscode repository..."
+            
+            # Clone the repository
+            git clone --depth=1 --single-branch --branch=main https://github.com/microsoft/vscode.git
+            cd vscode
+            
+            echo "✅ Clone completed successfully!"
+            echo "📍 Cloned commit: $(git rev-parse --short HEAD)"
+            echo "📂 Repository size: $(du -sh . | cut -f1)"
+
+      - name: 📦 Setup Dependencies  
+        id: setup
+        uses: ./run
+        with:
+          step-key: setup-deps
+          workdir: vscode
+          run: |
+            echo "📦 Installing VSCode dependencies..."
+            
+            # Simulate failure if requested
+            if [ "${{ github.event.inputs.force_failure_step }}" = "setup" ] && [ "${{ github.run_attempt }}" = "1" ]; then
+              echo "💥 SIMULATED FAILURE: Setup failing on first attempt (as requested)"
+              echo "🔄 On retry, this step will be skipped entirely due to checkpointing!"
+              exit 1
+            fi
+            
+            # Install dependencies
+            echo "⬇️  Running npm install..."
+            npm install --no-audit --no-fund
+            
+            echo "✅ Dependencies installed successfully!"
+            echo "📊 node_modules size: $(du -sh node_modules | cut -f1)"
+            echo "📦 Total packages: $(find node_modules -name 'package.json' | wc -l)"
+
+      - name: 🏗️ Build VSCode Core
+        id: build
+        uses: ./run
+        with:
+          step-key: build-core
+          workdir: vscode
+          run: |
+            echo "🏗️ Building VSCode core components..."
+            
+            # Simulate failure if requested
+            if [ "${{ github.event.inputs.force_failure_step }}" = "build" ] && [ "${{ github.run_attempt }}" = "1" ]; then
+              echo "💥 SIMULATED FAILURE: Build failing on first attempt (as requested)"
+              echo "🔄 On retry, setup steps will be skipped and build will retry!"
+              exit 1
+            fi
+            
+            # Build the project
+            echo "⚙️  Running build process..."
+            npm run compile
+            
+            echo "✅ Build completed successfully!"
+            if [ -d "out" ]; then
+              echo "📊 Build output size: $(du -sh out | cut -f1)"
+            fi
+
+      - name: 🧪 Run Basic Tests
+        id: test
+        uses: ./run
+        with:
+          step-key: run-tests
+          workdir: vscode
+          run: |
+            echo "🧪 Running basic VSCode tests..."
+            
+            # Simulate failure if requested
+            if [ "${{ github.event.inputs.force_failure_step }}" = "test" ] && [ "${{ github.run_attempt }}" = "1" ]; then
+              echo "💥 SIMULATED FAILURE: Tests failing on first attempt (as requested)"
+              echo "🔄 On retry, all previous steps will be skipped and only tests will re-run!"
+              exit 1
+            fi
+            
+            # Run a subset of fast tests
+            echo "🏃‍♂️ Running unit tests..."
+            npm run test:unit -- --grep "basic" --timeout 30000 || true
+            
+            # Just check that critical files exist
+            echo "🔍 Verifying build artifacts..."
+            test -f "out/bootstrap.js" || { echo "❌ Bootstrap not found"; exit 1; }
+            test -d "out/vs" || { echo "❌ VS directory not found"; exit 1; }
+            
+            echo "✅ Basic tests completed!"
+
+      - name: 📈 Show Final Stats
+        uses: ./run
+        with:
+          step-key: show-stats
+          workdir: vscode
+          run: |
+            echo "📈 Final Build Statistics:"
+            echo "=========================================="
+            echo "📂 Repository: $(du -sh . | cut -f1)"
+            echo "📦 Dependencies: $(du -sh node_modules 2>/dev/null | cut -f1 || echo 'N/A')"
+            echo "🏗️ Build Output: $(du -sh out 2>/dev/null | cut -f1 || echo 'N/A')"
+            echo "📄 Total Files: $(find . -type f | wc -l)"
+            echo "⏱️ Build completed at: $(date)"
+            echo "=========================================="
+
+      - name: 📊 Show Step Results
+        if: always()
+        run: |
+          echo "🎯 Sprite Kit Demo Results:"
+          echo "================================="
+          echo "Clone - Skipped: ${{ steps.clone.outputs.skipped }}, Exit Code: ${{ steps.clone.outputs.exit-code }}"
+          echo "Setup - Skipped: ${{ steps.setup.outputs.skipped }}, Exit Code: ${{ steps.setup.outputs.exit-code }}"
+          echo "Build - Skipped: ${{ steps.build.outputs.skipped }}, Exit Code: ${{ steps.build.outputs.exit-code }}"
+          echo "Tests - Skipped: ${{ steps.test.outputs.skipped }}, Exit Code: ${{ steps.test.outputs.exit-code }}"
+          echo "================================="
+          
+          if [ "${{ github.run_attempt }}" != "1" ]; then
+            echo "🔄 This was a RETRY run - notice how expensive steps were skipped!"
+            echo "💾 Sprite Kit saved significant time by preserving state across steps."
+          else
+            echo "🆕 This was the initial run - all steps executed from scratch."
+            if [ "${{ github.event.inputs.force_failure_step }}" != "none" ]; then
+              echo "💥 Failure was simulated in the ${{ github.event.inputs.force_failure_step }} step."
+              echo "🔄 Try re-running this workflow to see the retry behavior!"
+            fi
+          fi
+
+      # Only cleanup on success - if we cleanup on failure, 
+      # the sprite won't exist for retry to restore from
+      - name: 🧹 Cleanup Sprite
+        if: success()
+        uses: ./clean

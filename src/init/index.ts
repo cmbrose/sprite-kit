@@ -7,7 +7,7 @@ import {
     findLastCheckpointForJob,
     GitHubContext,
     InitInputs
-} from '@sprite-kit/common';
+} from '../common/index.js';
 
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {

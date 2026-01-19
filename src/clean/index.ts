@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { SpriteInfo, SpritesClient } from '@fly/sprites';
-import { CleanInputs, CleanOutputs } from '@sprite-kit/common';
+import { CleanInputs, CleanOutputs } from '../common/index.js';
 
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {

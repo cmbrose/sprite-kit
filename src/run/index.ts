@@ -7,7 +7,7 @@ import {
     RunInputs,
     createCheckpoint,
     restoreCheckpoint,
-} from '@sprite-kit/common';
+} from '../common/index.js';
 
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {

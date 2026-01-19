@@ -5,9 +5,8 @@
         "lib": [
             "ES2022"
         ],
-        "moduleResolution": "node",
         "outDir": "./dist",
-        "rootDir": "./",
+        "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
@@ -16,19 +15,14 @@
         "declaration": true,
         "declarationMap": true,
         "sourceMap": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true
+        "moduleResolution": "node"
     },
     "include": [
-        "common/src/**/*",
-        "init/src/**/*",
-        "run/src/**/*"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules",
-        "**/dist",
-        "**/node_modules"
+        "dist",
+        "**/*.test.ts"
     ]
 }

@@ -26,8 +26,6 @@ interface RequestOptions {
   body?: unknown;
   timeout?: number;
   stream?: boolean;
-  // Don't retry on 404 for GET requests to specific resources
-  skipRetryOn404?: boolean;
 }
 
 /**
@@ -51,7 +49,7 @@ export class SpritesClient {
   async createOrGetSprite(options: CreateSpriteOptions): Promise<Sprite> {
     // First try to get existing sprite by name
     try {
-      const existing = await this.getSpriteByName(options.name);
+      const existing = await this.getSprite(options.name);
       if (existing) {
         core.info(`Found existing sprite: ${existing.id}`);
         return existing;
@@ -71,53 +69,32 @@ export class SpritesClient {
   }
 
   /**
-   * Get a sprite by name using GET /v1/sprites/{name}
+   * Get a sprite by name
    */
-  async getSpriteByName(name: string): Promise<Sprite | null> {
-    try {
-      const sprite = await this.request<Sprite>({
-        method: 'GET',
-        path: `/sprites/${encodeURIComponent(name)}`,
-        skipRetryOn404: true,
-      });
-      return sprite;
-    } catch (error) {
-      if ((error as ApiError).status === 404) {
-        return null;
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Get a sprite by ID or name
-   */
-  async getSprite(spriteId: string): Promise<Sprite> {
+  async getSprite(spriteName: string): Promise<Sprite> {
     return this.request<Sprite>({
       method: 'GET',
-      path: `/sprites/${spriteId}`,
-      skipRetryOn404: true,
+      path: `/sprites/${spriteName}`
     });
   }
 
   /**
    * List checkpoints for a sprite
    */
-  async listCheckpoints(spriteId: string): Promise<Checkpoint[]> {
+  async listCheckpoints(spriteName: string): Promise<Checkpoint[]> {
     return this.request<Checkpoint[]>({
       method: 'GET',
-      path: `/sprites/${spriteId}/checkpoints`,
+      path: `/sprites/${spriteName}/checkpoints`,
     });
   }
 
   /**
-   * Get checkpoint by ID
+   * Get checkpoint by name
    */
-  async getCheckpoint(spriteId: string, checkpointId: string): Promise<Checkpoint> {
+  async getCheckpoint(spriteName: string, checkpointId: string): Promise<Checkpoint> {
     return this.request<Checkpoint>({
       method: 'GET',
-      path: `/sprites/${spriteId}/checkpoints/${checkpointId}`,
-      skipRetryOn404: true,
+      path: `/sprites/${spriteName}/checkpoints/${checkpointId}`,
     });
   }
 
@@ -127,7 +104,7 @@ export class SpritesClient {
   async createCheckpoint(options: CreateCheckpointOptions): Promise<Checkpoint> {
     const response = await this.request<Checkpoint>({
       method: 'POST',
-      path: `/sprites/${options.spriteId}/checkpoint`,
+      path: `/sprites/${options.spriteName}/checkpoint`,
       body: { comment: options.comment },
     });
     core.info(`Created checkpoint: ${response.id}`);
@@ -137,24 +114,24 @@ export class SpritesClient {
   /**
    * Restore a sprite from a checkpoint
    */
-  async restoreCheckpoint(spriteId: string, checkpointId: string): Promise<void> {
+  async restoreCheckpoint(spriteName: string, checkpointId: string): Promise<void> {
     await this.request<void>({
       method: 'POST',
-      path: `/sprites/${spriteId}/checkpoints/${checkpointId}/restore`,
+      path: `/sprites/${spriteName}/checkpoints/${checkpointId}/restore`,
     });
-    core.info(`Restored sprite ${spriteId} from checkpoint ${checkpointId}`);
+    core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
   }
 
   /**
    * Execute a command in a sprite with streaming output
    */
   async exec(options: ExecOptions): Promise<ExecResult> {
-    const { spriteId, command, workdir, env } = options;
+    const { spriteName, command, workdir, env } = options;
 
-    core.info(`Executing command in sprite ${spriteId}`);
+    core.info(`Executing command in sprite ${spriteName}`);
     core.debug(`Command: ${command}`);
 
-    const result = await this.execWithStreaming(spriteId, {
+    const result = await this.execWithStreaming(spriteName, {
       command,
       workdir,
       env,
@@ -167,11 +144,11 @@ export class SpritesClient {
    * Execute command with streaming stdout/stderr
    */
   private async execWithStreaming(
-    spriteId: string,
+    spriteName: string,
     body: { command: string; workdir?: string; env?: Record<string, string> }
   ): Promise<ExecResult> {
     return new Promise((resolve, reject) => {
-      const url = new URL(`${this.apiUrl}/sprites/${spriteId}/exec`);
+      const url = new URL(`${this.apiUrl}/sprites/${spriteName}/exec`);
       const isHttps = url.protocol === 'https:';
       const httpModule = isHttps ? https : http;
 
@@ -250,6 +227,32 @@ export class SpritesClient {
   }
 
   /**
+   * Delete a sprite by name
+   */
+  async deleteSprite(spriteName: string): Promise<void> {
+    await this.request<void>({
+      method: 'DELETE',
+      path: `/sprites/${spriteName}`,
+    });
+    core.info(`Deleted sprite: ${spriteName}`);
+  }
+
+  /**
+   * List all sprites, optionally filtered by name prefix
+   */
+  async listSprites(namePrefix?: string): Promise<ListSpritesResponse> {
+    let path = '/sprites';
+    if (namePrefix) {
+      path += `?prefix=${encodeURIComponent(namePrefix)}`;
+    }
+    return this.request<ListSpritesResponse>({
+      method: 'GET',
+      path,
+    });
+  }
+
+
+  /**
    * Make an HTTP request with retry logic
    */
   private async request<T>(options: RequestOptions, retries = 0): Promise<T> {
@@ -257,11 +260,6 @@ export class SpritesClient {
       return await this.doRequest<T>(options);
     } catch (error) {
       const apiError = error as ApiError;
-
-      // Don't retry 404 on GET requests to specific resources
-      if (options.skipRetryOn404 && apiError.status === 404) {
-        throw error;
-      }
 
       // Check if error is retryable
       if (
@@ -354,31 +352,6 @@ export class SpritesClient {
         req.write(requestBody);
       }
       req.end();
-    });
-  }
-
-  /**
-   * Delete a sprite by ID
-   */
-  async deleteSprite(spriteId: string): Promise<void> {
-    await this.request<void>({
-      method: 'DELETE',
-      path: `/sprites/${spriteId}`,
-    });
-    core.info(`Deleted sprite: ${spriteId}`);
-  }
-
-  /**
-   * List all sprites, optionally filtered by name prefix
-   */
-  async listSprites(namePrefix?: string): Promise<ListSpritesResponse> {
-    let path = '/sprites';
-    if (namePrefix) {
-      path += `?prefix=${encodeURIComponent(namePrefix)}`;
-    }
-    return this.request<ListSpritesResponse>({
-      method: 'GET',
-      path,
     });
   }
 

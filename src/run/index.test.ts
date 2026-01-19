@@ -61,7 +61,7 @@ describe('Run Action', () => {
       });
 
       const inputs = getInputs();
-      expect(inputs.spriteId).toBe('state-sprite-id');
+      expect(inputs.spriteName).toBe('state-sprite-id');
     });
 
     it('should prefer input over state', () => {
@@ -75,7 +75,7 @@ describe('Run Action', () => {
       });
 
       const inputs = getInputs();
-      expect(inputs.spriteId).toBe('input-sprite-id');
+      expect(inputs.spriteName).toBe('input-sprite-id');
     });
 
     it('should read workdir', () => {
@@ -94,7 +94,7 @@ describe('Run Action', () => {
       stepKey: 'install',
       run: 'npm ci',
       token: 'test-token',
-      spriteId: 'sprite-123',
+      spriteName: 'sprite-123',
       jobKey: 'build',
       runId: '12345',
     };
@@ -109,8 +109,8 @@ describe('Run Action', () => {
       );
     });
 
-    it('should throw if spriteId is missing', () => {
-      expect(() => validateInputs({ ...validInputs, spriteId: '' })).toThrow(
+    it('should throw if spriteName is missing', () => {
+      expect(() => validateInputs({ ...validInputs, spriteName: '' })).toThrow(
         'Sprite ID is required'
       );
     });
@@ -133,7 +133,7 @@ describe('Run Action', () => {
       mockClient.listCheckpoints.mockResolvedValue([
         {
           id: 'cp-1',
-          spriteId: 'sprite-123',
+          spriteName: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=install',
           created_at: '2024-01-01T00:00:00Z',
         },
@@ -149,7 +149,7 @@ describe('Run Action', () => {
       mockClient.listCheckpoints.mockResolvedValue([
         {
           id: 'cp-1',
-          spriteId: 'sprite-123',
+          spriteName: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=other',
           created_at: '2024-01-01T00:00:00Z',
         },
@@ -165,7 +165,7 @@ describe('Run Action', () => {
       mockClient.listCheckpoints.mockResolvedValue([
         {
           id: 'cp-1',
-          spriteId: 'sprite-123',
+          spriteName: 'sprite-123',
           comment: 'ghrun=99999;job=build;step=install',
           created_at: '2024-01-01T00:00:00Z',
         },
@@ -186,7 +186,7 @@ describe('Run Action', () => {
     it('should restore and return true when checkpoint matches', async () => {
       mockClient.getCheckpoint.mockResolvedValue({
         id: 'cp-1',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=install',
         created_at: '2024-01-01T00:00:00Z',
       });
@@ -201,7 +201,7 @@ describe('Run Action', () => {
     it('should skip restore and return false when checkpoint does not match', async () => {
       mockClient.getCheckpoint.mockResolvedValue({
         id: 'cp-1',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         comment: 'ghrun=99999;job=other;step=install',
         created_at: '2024-01-01T00:00:00Z',
       });
@@ -228,7 +228,7 @@ describe('Run Action', () => {
       stepKey: 'install',
       run: 'npm ci',
       token: 'test-token',
-      spriteId: 'sprite-123',
+      spriteName: 'sprite-123',
       jobKey: 'build',
       runId: '12345',
     };
@@ -237,7 +237,7 @@ describe('Run Action', () => {
       mockClient.listCheckpoints.mockResolvedValue([
         {
           id: 'cp-1',
-          spriteId: 'sprite-123',
+          spriteName: 'sprite-123',
           comment: 'ghrun=12345;job=build;step=install',
           created_at: '2024-01-01T00:00:00Z',
         },
@@ -256,7 +256,7 @@ describe('Run Action', () => {
       mockClient.exec.mockResolvedValue({ exitCode: 0, stdout: 'success', stderr: '' });
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=install',
         created_at: '2024-01-01T00:00:00Z',
       });
@@ -264,12 +264,12 @@ describe('Run Action', () => {
       await run(baseInputs, () => mockClient);
 
       expect(mockClient.exec).toHaveBeenCalledWith({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         command: 'npm ci',
         workdir: undefined,
       });
       expect(mockClient.createCheckpoint).toHaveBeenCalledWith({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=install',
       });
       expect(core.setOutput).toHaveBeenCalledWith('skipped', 'false');
@@ -281,7 +281,7 @@ describe('Run Action', () => {
       mockClient.listCheckpoints.mockResolvedValue([]);
       mockClient.getCheckpoint.mockResolvedValue({
         id: 'cp-previous',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         comment: 'ghrun=12345;job=build;step=previous',
         created_at: '2024-01-01T00:00:00Z',
       });
@@ -289,7 +289,7 @@ describe('Run Action', () => {
       mockClient.exec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' });
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         created_at: '2024-01-01T00:00:00Z',
       });
 
@@ -315,14 +315,14 @@ describe('Run Action', () => {
       mockClient.exec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' });
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         created_at: '2024-01-01T00:00:00Z',
       });
 
       await run({ ...baseInputs, workdir: '/app/frontend' }, () => mockClient);
 
       expect(mockClient.exec).toHaveBeenCalledWith({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         command: 'npm ci',
         workdir: '/app/frontend',
       });
@@ -333,7 +333,7 @@ describe('Run Action', () => {
       mockClient.exec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' });
       mockClient.createCheckpoint.mockResolvedValue({
         id: 'cp-new',
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         created_at: '2024-01-01T00:00:00Z',
       });
 

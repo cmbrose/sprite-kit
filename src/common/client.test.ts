@@ -166,7 +166,7 @@ describe('SpritesClient', () => {
   });
 
   describe('getSprite', () => {
-    it('should return sprite by ID', async () => {
+    it('should return sprite by name', async () => {
       const sprite = {
         id: 'sprite-123',
         name: 'test-sprite',
@@ -201,8 +201,8 @@ describe('SpritesClient', () => {
   describe('listCheckpoints', () => {
     it('should return list of checkpoints', async () => {
       const checkpoints = [
-        { id: 'cp-1', spriteId: 'sprite-123', comment: 'ghrun=1;job=build;step=install', created_at: '2024-01-01T00:00:00Z' },
-        { id: 'cp-2', spriteId: 'sprite-123', comment: 'ghrun=1;job=build;step=build', created_at: '2024-01-01T01:00:00Z' },
+        { id: 'cp-1', spriteName: 'sprite-123', comment: 'ghrun=1;job=build;step=install', created_at: '2024-01-01T00:00:00Z' },
+        { id: 'cp-2', spriteName: 'sprite-123', comment: 'ghrun=1;job=build;step=build', created_at: '2024-01-01T01:00:00Z' },
       ];
 
       nock(API_URL)
@@ -228,7 +228,7 @@ describe('SpritesClient', () => {
   });
 
   describe('getCheckpoint', () => {
-    it('should return checkpoint by ID', async () => {
+    it('should return checkpoint by name', async () => {
       const checkpoint = {
         id: 'cp-123',
         create_time: '2024-01-01T00:00:00Z',
@@ -260,7 +260,7 @@ describe('SpritesClient', () => {
 
       const client = new SpritesClient(TOKEN);
       const result = await client.createCheckpoint({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         comment: 'ghrun=1;job=build;step=deploy',
       });
 
@@ -310,7 +310,7 @@ describe('SpritesClient', () => {
     }, 10000);
 
     it('should retry on 429 error', async () => {
-      const checkpoints = [{ id: 'cp-1', spriteId: 'sprite-123', created_at: '2024-01-01T00:00:00Z' }];
+      const checkpoints = [{ id: 'cp-1', spriteName: 'sprite-123', created_at: '2024-01-01T00:00:00Z' }];
 
       nock(API_URL)
         .get('/sprites/sprite-123/checkpoints')
@@ -368,7 +368,7 @@ describe('SpritesClient', () => {
       expect(core.warning).not.toHaveBeenCalled();
     });
 
-    it('should not retry on 404 error for GET sprite by ID', async () => {
+    it('should not retry on 404 error for GET sprite by name', async () => {
       nock(API_URL)
         .get('/sprites/sprite-404')
         .reply(404, { message: 'Sprite not found' });
@@ -398,7 +398,7 @@ describe('SpritesClient', () => {
 
       const client = new SpritesClient(TOKEN);
       const result = await client.exec({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         command: 'echo "Hello World"',
       });
 
@@ -419,7 +419,7 @@ describe('SpritesClient', () => {
 
       const client = new SpritesClient(TOKEN);
       const result = await client.exec({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         command: 'bad-command',
       });
 
@@ -436,7 +436,7 @@ describe('SpritesClient', () => {
 
       const client = new SpritesClient(TOKEN);
       const result = await client.exec({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         command: 'pwd',
         workdir: '/app',
       });
@@ -452,7 +452,7 @@ describe('SpritesClient', () => {
       const client = new SpritesClient(TOKEN);
 
       await expect(client.exec({
-        spriteId: 'sprite-123',
+        spriteName: 'sprite-123',
         command: 'echo test',
       })).rejects.toMatchObject({
         status: 500,

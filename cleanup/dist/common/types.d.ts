@@ -65,14 +65,14 @@ export interface CreateSpriteOptions {
  * Options for creating a checkpoint
  */
 export interface CreateCheckpointOptions {
-    spriteId: string;
+    spriteName: string;
     comment?: string;
 }
 /**
  * Options for executing a command
  */
 export interface ExecOptions {
-    spriteId: string;
+    spriteName: string;
     command: string;
     workdir?: string;
     env?: Record<string, string>;
@@ -109,8 +109,8 @@ export interface InitInputs {
  * Init action outputs
  */
 export interface InitOutputs {
-    spriteName: string;
     spriteId: string;
+    spriteName: string;
     jobKey: string;
     runId: string;
     lastCheckpointId: string;
@@ -124,7 +124,7 @@ export interface RunInputs {
     run: string;
     token?: string;
     apiUrl?: string;
-    spriteId: string;
+    spriteName: string;
     jobKey: string;
     runId: string;
     lastCheckpointId?: string;

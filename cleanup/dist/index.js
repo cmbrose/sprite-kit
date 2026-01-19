@@ -25697,7 +25697,7 @@ const SPRITE_KIT_PREFIX = 'gh-';
  */
 function getInputs() {
     return {
-        spriteId: core.getInput('sprite-id') || undefined,
+        spriteName: core.getInput('sprite-id') || undefined,
         maxAgeDays: parseInt(core.getInput('max-age-days') || '3', 10),
         dryRun: core.getInput('dry-run') === 'true',
         token: core.getInput('token') || process.env.SPRITES_TOKEN,
@@ -25720,29 +25720,29 @@ function isSpriteOlderThan(sprite, days) {
     return createdAt < cutoffDate;
 }
 /**
- * Delete a specific sprite by ID
+ * Delete a specific sprite by name
  */
-async function deleteSpecificSprite(client, spriteId, dryRun) {
+async function deleteSpecificSprite(client, spriteName, dryRun) {
     try {
-        const sprite = await client.getSprite(spriteId);
+        const sprite = await client.getSprite(spriteName);
         // Verify it's a sprite-kit sprite before deleting
         if (!isSpriteKitSprite(sprite)) {
-            core.warning(`Sprite ${spriteId} (${sprite.name}) was not created by sprite-kit (missing '${SPRITE_KIT_PREFIX}' prefix). Skipping deletion for safety.`);
+            core.warning(`Sprite ${spriteName} (${sprite.name}) was not created by sprite-kit (missing '${SPRITE_KIT_PREFIX}' prefix). Skipping deletion for safety.`);
             return [];
         }
         if (dryRun) {
-            core.info(`[DRY RUN] Would delete sprite: ${spriteId} (${sprite.name})`);
+            core.info(`[DRY RUN] Would delete sprite: ${spriteName} (${sprite.name})`);
         }
         else {
-            await client.deleteSprite(spriteId);
-            core.info(`Deleted sprite: ${spriteId} (${sprite.name})`);
+            await client.deleteSprite(spriteName);
+            core.info(`Deleted sprite: ${spriteName} (${sprite.name})`);
         }
-        return [spriteId];
+        return [spriteName];
     }
     catch (error) {
         // Sprite may already be deleted or not found
         if (error.status === 404) {
-            core.info(`Sprite ${spriteId} not found (may already be deleted)`);
+            core.info(`Sprite ${spriteName} not found (may already be deleted)`);
             return [];
         }
         throw error;
@@ -25804,10 +25804,10 @@ async function run(inputsOverride, clientFactory) {
             ? clientFactory(inputs.token, inputs.apiUrl)
             : new client_1.SpritesClient(inputs.token, inputs.apiUrl);
         let deletedIds;
-        if (inputs.spriteId) {
+        if (inputs.spriteName) {
             // Delete specific sprite
-            core.info(`Deleting specific sprite: ${inputs.spriteId}`);
-            deletedIds = await deleteSpecificSprite(client, inputs.spriteId, inputs.dryRun);
+            core.info(`Deleting specific sprite: ${inputs.spriteName}`);
+            deletedIds = await deleteSpecificSprite(client, inputs.spriteName, inputs.dryRun);
         }
         else {
             // Delete old sprites
@@ -25910,7 +25910,7 @@ class SpritesClient {
     async createOrGetSprite(options) {
         // First try to get existing sprite by name
         try {
-            const existing = await this.getSpriteByName(options.name);
+            const existing = await this.getSprite(options.name);
             if (existing) {
                 core.info(`Found existing sprite: ${existing.id}`);
                 return existing;
@@ -25929,51 +25929,30 @@ class SpritesClient {
         return response;
     }
     /**
-     * Get a sprite by name using GET /v1/sprites/{name}
+     * Get a sprite by name
      */
-    async getSpriteByName(name) {
-        try {
-            const sprite = await this.request({
-                method: 'GET',
-                path: `/sprites/${encodeURIComponent(name)}`,
-                skipRetryOn404: true,
-            });
-            return sprite;
-        }
-        catch (error) {
-            if (error.status === 404) {
-                return null;
-            }
-            throw error;
-        }
-    }
-    /**
-     * Get a sprite by ID or name
-     */
-    async getSprite(spriteId) {
+    async getSprite(spriteName) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteId}`,
-            skipRetryOn404: true,
+            path: `/sprites/${spriteName}`
         });
     }
     /**
      * List checkpoints for a sprite
      */
-    async listCheckpoints(spriteId) {
+    async listCheckpoints(spriteName) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteId}/checkpoints`,
+            path: `/sprites/${spriteName}/checkpoints`,
         });
     }
     /**
-     * Get checkpoint by ID
+     * Get checkpoint by name
      */
-    async getCheckpoint(spriteId, checkpointId) {
+    async getCheckpoint(spriteName, checkpointId) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteId}/checkpoints/${checkpointId}`,
-            skipRetryOn404: true,
+            path: `/sprites/${spriteName}/checkpoints/${checkpointId}`,
         });
     }
     /**
@@ -25982,7 +25961,7 @@ class SpritesClient {
     async createCheckpoint(options) {
         const response = await this.request({
             method: 'POST',
-            path: `/sprites/${options.spriteId}/checkpoint`,
+            path: `/sprites/${options.spriteName}/checkpoint`,
             body: { comment: options.comment },
         });
         core.info(`Created checkpoint: ${response.id}`);
@@ -25991,21 +25970,21 @@ class SpritesClient {
     /**
      * Restore a sprite from a checkpoint
      */
-    async restoreCheckpoint(spriteId, checkpointId) {
+    async restoreCheckpoint(spriteName, checkpointId) {
         await this.request({
             method: 'POST',
-            path: `/sprites/${spriteId}/checkpoints/${checkpointId}/restore`,
+            path: `/sprites/${spriteName}/checkpoints/${checkpointId}/restore`,
         });
-        core.info(`Restored sprite ${spriteId} from checkpoint ${checkpointId}`);
+        core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
     }
     /**
      * Execute a command in a sprite with streaming output
      */
     async exec(options) {
-        const { spriteId, command, workdir, env } = options;
-        core.info(`Executing command in sprite ${spriteId}`);
+        const { spriteName, command, workdir, env } = options;
+        core.info(`Executing command in sprite ${spriteName}`);
         core.debug(`Command: ${command}`);
-        const result = await this.execWithStreaming(spriteId, {
+        const result = await this.execWithStreaming(spriteName, {
             command,
             workdir,
             env,
@@ -26015,9 +25994,9 @@ class SpritesClient {
     /**
      * Execute command with streaming stdout/stderr
      */
-    async execWithStreaming(spriteId, body) {
+    async execWithStreaming(spriteName, body) {
         return new Promise((resolve, reject) => {
-            const url = new url_1.URL(`${this.apiUrl}/sprites/${spriteId}/exec`);
+            const url = new url_1.URL(`${this.apiUrl}/sprites/${spriteName}/exec`);
             const isHttps = url.protocol === 'https:';
             const httpModule = isHttps ? https : http;
             const requestBody = JSON.stringify(body);
@@ -26090,6 +26069,29 @@ class SpritesClient {
         });
     }
     /**
+     * Delete a sprite by name
+     */
+    async deleteSprite(spriteName) {
+        await this.request({
+            method: 'DELETE',
+            path: `/sprites/${spriteName}`,
+        });
+        core.info(`Deleted sprite: ${spriteName}`);
+    }
+    /**
+     * List all sprites, optionally filtered by name prefix
+     */
+    async listSprites(namePrefix) {
+        let path = '/sprites';
+        if (namePrefix) {
+            path += `?prefix=${encodeURIComponent(namePrefix)}`;
+        }
+        return this.request({
+            method: 'GET',
+            path,
+        });
+    }
+    /**
      * Make an HTTP request with retry logic
      */
     async request(options, retries = 0) {
@@ -26098,10 +26100,6 @@ class SpritesClient {
         }
         catch (error) {
             const apiError = error;
-            // Don't retry 404 on GET requests to specific resources
-            if (options.skipRetryOn404 && apiError.status === 404) {
-                throw error;
-            }
             // Check if error is retryable
             if (retries < MAX_RETRIES &&
                 (TRANSIENT_ERROR_CODES.includes(apiError.status || 0) ||
@@ -26179,29 +26177,6 @@ class SpritesClient {
                 req.write(requestBody);
             }
             req.end();
-        });
-    }
-    /**
-     * Delete a sprite by ID
-     */
-    async deleteSprite(spriteId) {
-        await this.request({
-            method: 'DELETE',
-            path: `/sprites/${spriteId}`,
-        });
-        core.info(`Deleted sprite: ${spriteId}`);
-    }
-    /**
-     * List all sprites, optionally filtered by name prefix
-     */
-    async listSprites(namePrefix) {
-        let path = '/sprites';
-        if (namePrefix) {
-            path += `?prefix=${encodeURIComponent(namePrefix)}`;
-        }
-        return this.request({
-            method: 'GET',
-            path,
         });
     }
     /**

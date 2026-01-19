@@ -25710,7 +25710,7 @@ class SpritesClient {
     async createOrGetSprite(options) {
         // First try to get existing sprite by name
         try {
-            const existing = await this.getSpriteByName(options.name);
+            const existing = await this.getSprite(options.name);
             if (existing) {
                 core.info(`Found existing sprite: ${existing.id}`);
                 return existing;
@@ -25729,51 +25729,30 @@ class SpritesClient {
         return response;
     }
     /**
-     * Get a sprite by name using GET /v1/sprites/{name}
+     * Get a sprite by name
      */
-    async getSpriteByName(name) {
-        try {
-            const sprite = await this.request({
-                method: 'GET',
-                path: `/sprites/${encodeURIComponent(name)}`,
-                skipRetryOn404: true,
-            });
-            return sprite;
-        }
-        catch (error) {
-            if (error.status === 404) {
-                return null;
-            }
-            throw error;
-        }
-    }
-    /**
-     * Get a sprite by ID or name
-     */
-    async getSprite(spriteId) {
+    async getSprite(spriteName) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteId}`,
-            skipRetryOn404: true,
+            path: `/sprites/${spriteName}`
         });
     }
     /**
      * List checkpoints for a sprite
      */
-    async listCheckpoints(spriteId) {
+    async listCheckpoints(spriteName) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteId}/checkpoints`,
+            path: `/sprites/${spriteName}/checkpoints`,
         });
     }
     /**
-     * Get checkpoint by ID
+     * Get checkpoint by name
      */
-    async getCheckpoint(spriteId, checkpointId) {
+    async getCheckpoint(spriteName, checkpointId) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteId}/checkpoints/${checkpointId}`,
-            skipRetryOn404: true,
+            path: `/sprites/${spriteName}/checkpoints/${checkpointId}`,
         });
     }
     /**
@@ -25782,7 +25761,7 @@ class SpritesClient {
     async createCheckpoint(options) {
         const response = await this.request({
             method: 'POST',
-            path: `/sprites/${options.spriteId}/checkpoint`,
+            path: `/sprites/${options.spriteName}/checkpoint`,
             body: { comment: options.comment },
         });
         core.info(`Created checkpoint: ${response.id}`);
@@ -25791,21 +25770,21 @@ class SpritesClient {
     /**
      * Restore a sprite from a checkpoint
      */
-    async restoreCheckpoint(spriteId, checkpointId) {
+    async restoreCheckpoint(spriteName, checkpointId) {
         await this.request({
             method: 'POST',
-            path: `/sprites/${spriteId}/checkpoints/${checkpointId}/restore`,
+            path: `/sprites/${spriteName}/checkpoints/${checkpointId}/restore`,
         });
-        core.info(`Restored sprite ${spriteId} from checkpoint ${checkpointId}`);
+        core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
     }
     /**
      * Execute a command in a sprite with streaming output
      */
     async exec(options) {
-        const { spriteId, command, workdir, env } = options;
-        core.info(`Executing command in sprite ${spriteId}`);
+        const { spriteName, command, workdir, env } = options;
+        core.info(`Executing command in sprite ${spriteName}`);
         core.debug(`Command: ${command}`);
-        const result = await this.execWithStreaming(spriteId, {
+        const result = await this.execWithStreaming(spriteName, {
             command,
             workdir,
             env,
@@ -25815,9 +25794,9 @@ class SpritesClient {
     /**
      * Execute command with streaming stdout/stderr
      */
-    async execWithStreaming(spriteId, body) {
+    async execWithStreaming(spriteName, body) {
         return new Promise((resolve, reject) => {
-            const url = new url_1.URL(`${this.apiUrl}/sprites/${spriteId}/exec`);
+            const url = new url_1.URL(`${this.apiUrl}/sprites/${spriteName}/exec`);
             const isHttps = url.protocol === 'https:';
             const httpModule = isHttps ? https : http;
             const requestBody = JSON.stringify(body);
@@ -25890,6 +25869,29 @@ class SpritesClient {
         });
     }
     /**
+     * Delete a sprite by name
+     */
+    async deleteSprite(spriteName) {
+        await this.request({
+            method: 'DELETE',
+            path: `/sprites/${spriteName}`,
+        });
+        core.info(`Deleted sprite: ${spriteName}`);
+    }
+    /**
+     * List all sprites, optionally filtered by name prefix
+     */
+    async listSprites(namePrefix) {
+        let path = '/sprites';
+        if (namePrefix) {
+            path += `?prefix=${encodeURIComponent(namePrefix)}`;
+        }
+        return this.request({
+            method: 'GET',
+            path,
+        });
+    }
+    /**
      * Make an HTTP request with retry logic
      */
     async request(options, retries = 0) {
@@ -25898,10 +25900,6 @@ class SpritesClient {
         }
         catch (error) {
             const apiError = error;
-            // Don't retry 404 on GET requests to specific resources
-            if (options.skipRetryOn404 && apiError.status === 404) {
-                throw error;
-            }
             // Check if error is retryable
             if (retries < MAX_RETRIES &&
                 (TRANSIENT_ERROR_CODES.includes(apiError.status || 0) ||
@@ -25979,29 +25977,6 @@ class SpritesClient {
                 req.write(requestBody);
             }
             req.end();
-        });
-    }
-    /**
-     * Delete a sprite by ID
-     */
-    async deleteSprite(spriteId) {
-        await this.request({
-            method: 'DELETE',
-            path: `/sprites/${spriteId}`,
-        });
-        core.info(`Deleted sprite: ${spriteId}`);
-    }
-    /**
-     * List all sprites, optionally filtered by name prefix
-     */
-    async listSprites(namePrefix) {
-        let path = '/sprites';
-        if (namePrefix) {
-            path += `?prefix=${encodeURIComponent(namePrefix)}`;
-        }
-        return this.request({
-            method: 'GET',
-            path,
         });
     }
     /**
@@ -26241,7 +26216,7 @@ function getInputs() {
         run: core.getInput('run', { required: true }),
         token: core.getInput('token') || process.env.SPRITES_TOKEN,
         apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
-        spriteId: core.getInput('sprite-id') || core.getState('sprite-id'),
+        spriteName: core.getInput('sprite-id') || core.getState('sprite-id'),
         jobKey: core.getInput('job-key') || core.getState('job-key'),
         runId: core.getInput('run-id') || core.getState('run-id'),
         lastCheckpointId: core.getInput('last-checkpoint-id') || core.getState('last-checkpoint-id'),
@@ -26255,7 +26230,7 @@ function validateInputs(inputs) {
     if (!inputs.token) {
         throw new Error('Sprites token is required. Set SPRITES_TOKEN environment variable or provide token input.');
     }
-    if (!inputs.spriteId) {
+    if (!inputs.spriteName) {
         throw new Error('Sprite ID is required. Run init action first or provide sprite-id input.');
     }
     if (!inputs.jobKey) {
@@ -26268,8 +26243,8 @@ function validateInputs(inputs) {
 /**
  * Check if step should be skipped based on existing checkpoint
  */
-async function shouldSkipStep(client, spriteId, runId, jobKey, stepKey) {
-    const checkpoints = await client.listCheckpoints(spriteId);
+async function shouldSkipStep(client, spriteName, runId, jobKey, stepKey) {
+    const checkpoints = await client.listCheckpoints(spriteName);
     const existingCheckpointId = (0, identity_1.findCheckpointForStep)(checkpoints, runId, jobKey, stepKey);
     return {
         skip: existingCheckpointId !== null,
@@ -26279,20 +26254,20 @@ async function shouldSkipStep(client, spriteId, runId, jobKey, stepKey) {
 /**
  * Restore from checkpoint if needed
  */
-async function maybeRestore(client, spriteId, lastCheckpointId, runId, jobKey) {
+async function maybeRestore(client, spriteName, lastCheckpointId, runId, jobKey) {
     if (!lastCheckpointId) {
         return false;
     }
     try {
         // Verify checkpoint belongs to this run/job
-        const checkpoint = await client.getCheckpoint(spriteId, lastCheckpointId);
+        const checkpoint = await client.getCheckpoint(spriteName, lastCheckpointId);
         const metadata = (0, identity_1.parseCheckpointComment)(checkpoint.comment);
         if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey) {
             core.warning('Checkpoint does not match current run/job, skipping restore');
             return false;
         }
         core.info(`Restoring from checkpoint: ${lastCheckpointId}`);
-        await client.restoreCheckpoint(spriteId, lastCheckpointId);
+        await client.restoreCheckpoint(spriteName, lastCheckpointId);
         return true;
     }
     catch (error) {
@@ -26314,11 +26289,11 @@ async function run(inputsOverride, clientFactory) {
         const client = clientFactory
             ? clientFactory(inputs.token, inputs.apiUrl)
             : new client_1.SpritesClient(inputs.token, inputs.apiUrl);
-        const { spriteId, runId, jobKey, stepKey, lastCheckpointId } = inputs;
+        const { spriteName, runId, jobKey, stepKey, lastCheckpointId } = inputs;
         core.info(`Step key: ${stepKey}`);
-        core.info(`Sprite ID: ${spriteId}`);
+        core.info(`Sprite ID: ${spriteName}`);
         // Check if step should be skipped
-        const { skip, existingCheckpointId } = await shouldSkipStep(client, spriteId, runId, jobKey, stepKey);
+        const { skip, existingCheckpointId } = await shouldSkipStep(client, spriteName, runId, jobKey, stepKey);
         if (skip && existingCheckpointId) {
             core.info(`Step "${stepKey}" already completed, skipping execution`);
             skipped = true;
@@ -26331,13 +26306,13 @@ async function run(inputsOverride, clientFactory) {
             return;
         }
         // Restore from last checkpoint if this is a rerun
-        restored = await maybeRestore(client, spriteId, lastCheckpointId, runId, jobKey);
+        restored = await maybeRestore(client, spriteName, lastCheckpointId, runId, jobKey);
         // Execute the command
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running: ${inputs.run}`);
         try {
             const result = await client.exec({
-                spriteId,
+                spriteName,
                 command: inputs.run,
                 workdir: inputs.workdir || undefined,
             });
@@ -26354,7 +26329,7 @@ async function run(inputsOverride, clientFactory) {
         // Create checkpoint on success
         const comment = (0, identity_1.formatCheckpointComment)(runId, jobKey, stepKey);
         const checkpoint = await client.createCheckpoint({
-            spriteId,
+            spriteName,
             comment,
         });
         checkpointId = checkpoint.id;

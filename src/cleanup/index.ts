@@ -11,7 +11,7 @@ const SPRITE_KIT_PREFIX = 'gh-';
  * Inputs for the cleanup action
  */
 interface CleanupInputs {
-  spriteId?: string;
+  spriteName?: string;
   maxAgeDays: number;
   dryRun: boolean;
   token?: string;
@@ -23,7 +23,7 @@ interface CleanupInputs {
  */
 export function getInputs(): CleanupInputs {
   return {
-    spriteId: core.getInput('sprite-id') || undefined,
+    spriteName: core.getInput('sprite-id') || undefined,
     maxAgeDays: parseInt(core.getInput('max-age-days') || '3', 10),
     dryRun: core.getInput('dry-run') === 'true',
     token: core.getInput('token') || process.env.SPRITES_TOKEN,
@@ -49,35 +49,35 @@ export function isSpriteOlderThan(sprite: Sprite, days: number): boolean {
 }
 
 /**
- * Delete a specific sprite by ID
+ * Delete a specific sprite by name
  */
 async function deleteSpecificSprite(
   client: SpritesClient,
-  spriteId: string,
+  spriteName: string,
   dryRun: boolean
 ): Promise<string[]> {
   try {
-    const sprite = await client.getSprite(spriteId);
+    const sprite = await client.getSprite(spriteName);
 
     // Verify it's a sprite-kit sprite before deleting
     if (!isSpriteKitSprite(sprite)) {
       core.warning(
-        `Sprite ${spriteId} (${sprite.name}) was not created by sprite-kit (missing '${SPRITE_KIT_PREFIX}' prefix). Skipping deletion for safety.`
+        `Sprite ${spriteName} (${sprite.name}) was not created by sprite-kit (missing '${SPRITE_KIT_PREFIX}' prefix). Skipping deletion for safety.`
       );
       return [];
     }
 
     if (dryRun) {
-      core.info(`[DRY RUN] Would delete sprite: ${spriteId} (${sprite.name})`);
+      core.info(`[DRY RUN] Would delete sprite: ${spriteName} (${sprite.name})`);
     } else {
-      await client.deleteSprite(spriteId);
-      core.info(`Deleted sprite: ${spriteId} (${sprite.name})`);
+      await client.deleteSprite(spriteName);
+      core.info(`Deleted sprite: ${spriteName} (${sprite.name})`);
     }
-    return [spriteId];
+    return [spriteName];
   } catch (error) {
     // Sprite may already be deleted or not found
     if ((error as { status?: number }).status === 404) {
-      core.info(`Sprite ${spriteId} not found (may already be deleted)`);
+      core.info(`Sprite ${spriteName} not found (may already be deleted)`);
       return [];
     }
     throw error;
@@ -158,10 +158,10 @@ export async function run(
 
     let deletedIds: string[];
 
-    if (inputs.spriteId) {
+    if (inputs.spriteName) {
       // Delete specific sprite
-      core.info(`Deleting specific sprite: ${inputs.spriteId}`);
-      deletedIds = await deleteSpecificSprite(client, inputs.spriteId, inputs.dryRun);
+      core.info(`Deleting specific sprite: ${inputs.spriteName}`);
+      deletedIds = await deleteSpecificSprite(client, inputs.spriteName, inputs.dryRun);
     } else {
       // Delete old sprites
       deletedIds = await deleteOldSprites(client, inputs.maxAgeDays, inputs.dryRun);

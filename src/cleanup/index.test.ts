@@ -46,7 +46,7 @@ describe('Cleanup Action', () => {
       });
 
       const inputs = getInputs();
-      expect(inputs.spriteId).toBe('sprite-123');
+      expect(inputs.spriteName).toBe('sprite-123');
     });
 
     it('should parse max-age-days as number with default', () => {
@@ -199,7 +199,7 @@ describe('Cleanup Action', () => {
   });
 
   describe('run - specific sprite deletion', () => {
-    it('should delete specific sprite by ID', async () => {
+    it('should delete specific sprite by name', async () => {
       const sprite: Sprite = {
         id: 'sprite-123',
         name: 'gh-owner-repo-workflow-123-job',
@@ -344,7 +344,10 @@ describe('Cleanup Action', () => {
         },
       ];
 
-      mockClient.listSprites.mockResolvedValue(sprites);
+      mockClient.listSprites.mockResolvedValue({
+        sprites: sprites.map(s => ({...s, org_slug: s.organization})),
+        has_more: false,
+      });
       mockClient.deleteSprite.mockResolvedValue();
 
       await run({
@@ -377,7 +380,10 @@ describe('Cleanup Action', () => {
         },
       ];
 
-      mockClient.listSprites.mockResolvedValue(sprites);
+      mockClient.listSprites.mockResolvedValue({
+        sprites: sprites.map(s => ({...s, org_slug: s.organization})),
+        has_more: false,
+      });
 
       await run({
         token: 'test-token',
@@ -392,7 +398,7 @@ describe('Cleanup Action', () => {
     });
 
     it('should handle empty sprite list', async () => {
-      mockClient.listSprites.mockResolvedValue([]);
+      mockClient.listSprites.mockResolvedValue({sprites: [], has_more: false});
 
       await run({
         token: 'test-token',
@@ -431,7 +437,10 @@ describe('Cleanup Action', () => {
         },
       ];
 
-      mockClient.listSprites.mockResolvedValue(sprites);
+      mockClient.listSprites.mockResolvedValue({
+        sprites: sprites.map(s => ({...s, org_slug: s.organization})),
+        has_more: false,
+      });
       mockClient.deleteSprite
         .mockRejectedValueOnce(new Error('Delete failed'))
         .mockResolvedValueOnce();

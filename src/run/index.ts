@@ -16,7 +16,7 @@ export function getInputs(): RunInputs {
     run: core.getInput('run', { required: true }),
     token: core.getInput('token') || process.env.SPRITES_TOKEN,
     apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
-    spriteId: core.getInput('sprite-id') || core.getState('sprite-id'),
+    spriteName: core.getInput('sprite-id') || core.getState('sprite-id'),
     jobKey: core.getInput('job-key') || core.getState('job-key'),
     runId: core.getInput('run-id') || core.getState('run-id'),
     lastCheckpointId: core.getInput('last-checkpoint-id') || core.getState('last-checkpoint-id'),
@@ -33,7 +33,7 @@ export function validateInputs(inputs: RunInputs): void {
       'Sprites token is required. Set SPRITES_TOKEN environment variable or provide token input.'
     );
   }
-  if (!inputs.spriteId) {
+  if (!inputs.spriteName) {
     throw new Error(
       'Sprite ID is required. Run init action first or provide sprite-id input.'
     );
@@ -55,12 +55,12 @@ export function validateInputs(inputs: RunInputs): void {
  */
 export async function shouldSkipStep(
   client: SpritesClient,
-  spriteId: string,
+  spriteName: string,
   runId: string,
   jobKey: string,
   stepKey: string
 ): Promise<{ skip: boolean; existingCheckpointId: string | null }> {
-  const checkpoints = await client.listCheckpoints(spriteId);
+  const checkpoints = await client.listCheckpoints(spriteName);
   const existingCheckpointId = findCheckpointForStep(checkpoints, runId, jobKey, stepKey);
 
   return {
@@ -74,7 +74,7 @@ export async function shouldSkipStep(
  */
 export async function maybeRestore(
   client: SpritesClient,
-  spriteId: string,
+  spriteName: string,
   lastCheckpointId: string | undefined,
   runId: string,
   jobKey: string
@@ -85,7 +85,7 @@ export async function maybeRestore(
 
   try {
     // Verify checkpoint belongs to this run/job
-    const checkpoint = await client.getCheckpoint(spriteId, lastCheckpointId);
+    const checkpoint = await client.getCheckpoint(spriteName, lastCheckpointId);
     const metadata = parseCheckpointComment(checkpoint.comment);
 
     if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey) {
@@ -94,7 +94,7 @@ export async function maybeRestore(
     }
 
     core.info(`Restoring from checkpoint: ${lastCheckpointId}`);
-    await client.restoreCheckpoint(spriteId, lastCheckpointId);
+    await client.restoreCheckpoint(spriteName, lastCheckpointId);
     return true;
   } catch (error) {
     core.warning(`Failed to restore checkpoint: ${error}`);
@@ -121,15 +121,15 @@ export async function run(
     const client = clientFactory
       ? clientFactory(inputs.token!, inputs.apiUrl)
       : new SpritesClient(inputs.token!, inputs.apiUrl);
-    const { spriteId, runId, jobKey, stepKey, lastCheckpointId } = inputs;
+    const { spriteName, runId, jobKey, stepKey, lastCheckpointId } = inputs;
 
     core.info(`Step key: ${stepKey}`);
-    core.info(`Sprite ID: ${spriteId}`);
+    core.info(`Sprite ID: ${spriteName}`);
 
     // Check if step should be skipped
     const { skip, existingCheckpointId } = await shouldSkipStep(
       client,
-      spriteId,
+      spriteName,
       runId,
       jobKey,
       stepKey
@@ -149,7 +149,7 @@ export async function run(
     }
 
     // Restore from last checkpoint if this is a rerun
-    restored = await maybeRestore(client, spriteId, lastCheckpointId, runId, jobKey);
+    restored = await maybeRestore(client, spriteName, lastCheckpointId, runId, jobKey);
 
     // Execute the command
     core.info(`Executing step: ${stepKey}`);
@@ -157,7 +157,7 @@ export async function run(
 
     try {
       const result = await client.exec({
-        spriteId,
+        spriteName,
         command: inputs.run,
         workdir: inputs.workdir || undefined,
       });
@@ -176,7 +176,7 @@ export async function run(
     // Create checkpoint on success
     const comment = formatCheckpointComment(runId, jobKey, stepKey);
     const checkpoint = await client.createCheckpoint({
-      spriteId,
+      spriteName,
       comment,
     });
     checkpointId = checkpoint.id;

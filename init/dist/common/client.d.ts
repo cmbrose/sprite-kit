@@ -11,21 +11,17 @@ export declare class SpritesClient {
      */
     createOrGetSprite(options: CreateSpriteOptions): Promise<Sprite>;
     /**
-     * Get a sprite by name using GET /v1/sprites/{name}
+     * Get a sprite by name
      */
-    getSpriteByName(name: string): Promise<Sprite | null>;
-    /**
-     * Get a sprite by ID or name
-     */
-    getSprite(spriteId: string): Promise<Sprite>;
+    getSprite(spriteName: string): Promise<Sprite>;
     /**
      * List checkpoints for a sprite
      */
-    listCheckpoints(spriteId: string): Promise<Checkpoint[]>;
+    listCheckpoints(spriteName: string): Promise<Checkpoint[]>;
     /**
-     * Get checkpoint by ID
+     * Get checkpoint by name
      */
-    getCheckpoint(spriteId: string, checkpointId: string): Promise<Checkpoint>;
+    getCheckpoint(spriteName: string, checkpointId: string): Promise<Checkpoint>;
     /**
      * Create a new checkpoint using POST /v1/sprites/{name}/checkpoint
      */
@@ -33,7 +29,7 @@ export declare class SpritesClient {
     /**
      * Restore a sprite from a checkpoint
      */
-    restoreCheckpoint(spriteId: string, checkpointId: string): Promise<void>;
+    restoreCheckpoint(spriteName: string, checkpointId: string): Promise<void>;
     /**
      * Execute a command in a sprite with streaming output
      */
@@ -43,6 +39,14 @@ export declare class SpritesClient {
      */
     private execWithStreaming;
     /**
+     * Delete a sprite by name
+     */
+    deleteSprite(spriteName: string): Promise<void>;
+    /**
+     * List all sprites, optionally filtered by name prefix
+     */
+    listSprites(namePrefix?: string): Promise<ListSpritesResponse>;
+    /**
      * Make an HTTP request with retry logic
      */
     private request;
@@ -50,14 +54,6 @@ export declare class SpritesClient {
      * Execute HTTP request
      */
     private doRequest;
-    /**
-     * Delete a sprite by ID
-     */
-    deleteSprite(spriteId: string): Promise<void>;
-    /**
-     * List all sprites, optionally filtered by name prefix
-     */
-    listSprites(namePrefix?: string): Promise<ListSpritesResponse>;
     /**
      * Sleep for specified milliseconds
      */

@@ -4,7 +4,7 @@ import { Sprite } from '../common/types';
  * Inputs for the cleanup action
  */
 interface CleanupInputs {
-    spriteId?: string;
+    spriteName?: string;
     maxAgeDays: number;
     dryRun: boolean;
     token?: string;

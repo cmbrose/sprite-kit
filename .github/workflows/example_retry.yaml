@@ -18,7 +18,7 @@ jobs:
 
       - name: Init Sprite
         id: init
-        uses: ./src/init
+        uses: ./init
 
       - name: Debug run attempt
         run: |
@@ -29,7 +29,7 @@ jobs:
       # If this runs on retry (run_attempt > 1), it fails - proving skip worked
       - name: Step 1 - Write marker file (must be skipped on retry)
         id: step1
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: write-marker
           run: |
@@ -70,7 +70,7 @@ jobs:
       # Also verifies the marker file exists (proving checkpoint was restored)
       - name: Step 2 - Verify marker and succeed on retry
         id: step2
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: verify-marker
           run: |
@@ -111,4 +111,4 @@ jobs:
       # won't exist for the retry to restore from
       - name: Cleanup Sprite
         if: success()
-        uses: ./src/clean
+        uses: ./clean

@@ -15,16 +15,16 @@ jobs:
 
       - name: Init Sprite
         id: init
-        uses: ./src/init
+        uses: ./init
 
       - name: Run a step
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: test
           run: echo "Test"
 
       - name: Cleanup specific sprite
-        uses: ./src/clean
+        uses: ./clean
 
       - name: Verify cleanup completed
         run: echo "Cleanup completed successfully"

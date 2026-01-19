@@ -15,18 +15,18 @@ jobs:
 
       - name: Init Sprite
         id: init
-        uses: ./src/init
+        uses: ./init
 
       - name: Successful step
         id: success-step
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: success
           run: echo "This should succeed"
 
       - name: Failing step (expected)
         id: fail-step
-        uses: ./src/run
+        uses: ./run
         continue-on-error: true
         with:
           step-key: failure
@@ -44,4 +44,4 @@ jobs:
 
       - name: Cleanup Sprite
         if: always()
-        uses: ./src/clean
+        uses: ./clean

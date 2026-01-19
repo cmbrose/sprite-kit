@@ -15,10 +15,10 @@ jobs:
 
       - name: Init Sprite
         id: init
-        uses: ./src/init
+        uses: ./init
 
       - name: Create directory and file
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: create-dir
           run: |
@@ -26,7 +26,7 @@ jobs:
             echo "test content" > /tmp/testdir/testfile.txt
 
       - name: Verify workdir option
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: check-workdir
           workdir: /tmp/testdir
@@ -36,4 +36,4 @@ jobs:
 
       - name: Cleanup Sprite
         if: always()
-        uses: ./src/clean
+        uses: ./clean

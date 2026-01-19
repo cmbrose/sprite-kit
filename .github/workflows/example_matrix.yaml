@@ -18,7 +18,7 @@ jobs:
 
       - name: Init Sprite
         id: init
-        uses: ./src/init
+        uses: ./init
         with:
           matrix: ${{ toJson(matrix) }}
 
@@ -35,11 +35,11 @@ jobs:
 
       - name: Run step specific to matrix variant
         id: step1
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: variant-step
           run: echo "Running variant ${{ matrix.variant }}"
 
       - name: Cleanup Sprite
         if: always()
-        uses: ./src/clean
+        uses: ./clean

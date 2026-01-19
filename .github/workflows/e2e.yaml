@@ -23,7 +23,7 @@ jobs:
 
       - name: Test Init Action
         id: init
-        uses: ./src/init
+        uses: ./init
 
       - name: Verify init outputs
         run: |
@@ -38,7 +38,7 @@ jobs:
 
       - name: Test Run Action
         id: run-test
-        uses: ./src/run
+        uses: ./run
         with:
           step-key: smoke-test
           run: echo "Hello from smoke test"
@@ -52,4 +52,4 @@ jobs:
           test -n "${{ steps.run-test.outputs.checkpoint-id }}" || exit 1
 
       - name: Test Clean Action
-        uses: ./src/clean
+        uses: ./clean

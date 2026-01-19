@@ -159,7 +159,7 @@ export async function run(
 
         const command = sprite.spawn(
             '/bin/bash',
-            [],
+            ['-c', inputs.run],
             {
                 cwd: inputs.workdir,
             });
@@ -170,11 +170,6 @@ export async function run(
 
         command.stderr.on('data', (data: Buffer) => {
             core.error("err: " + data.toString());
-        });
-
-        command.on('spawn', () => {
-            command.stdin.write(inputs.run + '\n');
-            command.stdin.end();
         });
 
         exitCode = await command.wait();

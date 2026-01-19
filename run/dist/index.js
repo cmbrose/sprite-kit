@@ -37939,7 +37939,7 @@ async function run(inputsOverride) {
         // Execute the command
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running command:`);
-        const command = sprite.spawn('/bin/bash', [], {
+        const command = sprite.spawn('/bin/bash', ['-c', inputs.run], {
             cwd: inputs.workdir,
         });
         command.stdout.on('data', (data) => {
@@ -37947,10 +37947,6 @@ async function run(inputsOverride) {
         });
         command.stderr.on('data', (data) => {
             core.error("err: " + data.toString());
-        });
-        command.on('spawn', () => {
-            command.stdin.write(inputs.run + '\n');
-            command.stdin.end();
         });
         exitCode = await command.wait();
         if (exitCode !== 0) {

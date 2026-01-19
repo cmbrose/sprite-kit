@@ -23,8 +23,6 @@ inputs:
 outputs:
   sprite-name:
     description: 'The deterministic sprite name derived from GitHub context'
-  sprite-id:
-    description: 'The unique ID of the created or retrieved sprite'
   job-key:
     description: 'The job key used for checkpoint matching'
   run-id:

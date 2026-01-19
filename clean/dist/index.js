@@ -35349,11 +35349,11 @@ async function cleanCurrentSprite(client, spriteName, dryRun) {
         // Verify sprite exists
         const sprite = await client.getSprite(spriteName);
         if (dryRun) {
-            core.info(`Would delete current workflow sprite: ${sprite.name} (${sprite.id})`);
+            core.info(`Would delete current workflow sprite: ${sprite.name}`);
             return { cleaned: false, found: true };
         }
         await client.deleteSprite(spriteName);
-        core.info(`✓ Deleted current workflow sprite: ${sprite.name} (${sprite.id})`);
+        core.info(`✓ Deleted current workflow sprite: ${sprite.name}`);
         return { cleaned: true, found: true };
     }
     catch (error) {
@@ -35404,7 +35404,7 @@ async function clean(inputsOverride) {
             if (inputs.dryRun) {
                 core.startGroup('Sprites that would be deleted (dry run)');
                 for (const sprite of spritesToClean) {
-                    core.info(`- ${sprite.name} (${sprite.id}) - created ${sprite.createdAt}`);
+                    core.info(`- ${sprite.name} - created ${sprite.createdAt}`);
                 }
                 core.endGroup();
                 return { spritesCleaned: 0, spritesFound, dryRun: true, mode: inputs.mode };
@@ -35413,8 +35413,8 @@ async function clean(inputsOverride) {
             core.startGroup('Deleting old sprites');
             const deletePromises = spritesToClean.map(async (sprite) => {
                 try {
-                    await client.deleteSprite(sprite.id);
-                    core.info(`✓ Deleted sprite: ${sprite.name} (${sprite.id})`);
+                    await client.deleteSprite(sprite.name);
+                    core.info(`✓ Deleted sprite: ${sprite.name}`);
                     return true;
                 }
                 catch (error) {

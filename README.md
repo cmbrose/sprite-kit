@@ -105,7 +105,6 @@ Establishes sprite identity and retrieves checkpoint state.
 | Output | Description |
 |--------|-------------|
 | `sprite-name` | Deterministic sprite name |
-| `sprite-id` | Unique sprite ID |
 | `job-key` | Job key for checkpoint matching |
 | `run-id` | GitHub run ID |
 | `last-checkpoint-id` | Last successful checkpoint ID (if any) |

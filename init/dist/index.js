@@ -32933,14 +32933,12 @@ async function run(ghContext) {
             core.info('No previous checkpoint found for this job');
         }
         // Set outputs
-        core.setOutput('sprite-id', sprite.id);
         core.setOutput('sprite-name', sprite.name);
         core.setOutput('job-key', jobKey);
         core.setOutput('run-id', runId);
         core.setOutput('last-checkpoint-id', lastCheckpointId || '');
         core.setOutput('needs-restore', needsRestore.toString());
         // Set environment variables for subsequent steps in the same job
-        core.exportVariable('SPRITE_ID', sprite.id);
         core.exportVariable('SPRITE_NAME', sprite.name);
         core.exportVariable('SPRITE_JOB_KEY', jobKey);
         core.exportVariable('SPRITE_RUN_ID', runId);

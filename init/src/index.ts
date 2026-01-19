@@ -9,6 +9,16 @@ import {
     InitInputs
 } from '@sprite-kit/common';
 
+// Polyfill WebSocket for Node.js environment
+if (typeof globalThis.WebSocket === 'undefined') {
+    try {
+        const ws = require('ws');
+        globalThis.WebSocket = ws.WebSocket || ws.default || ws;
+    } catch (error) {
+        console.warn('WebSocket polyfill failed to load:', error);
+    }
+}
+
 /**
  * Get inputs for the init action
  */

@@ -3,6 +3,16 @@ import * as github from '@actions/github';
 import { SpriteInfo, SpritesClient } from '@fly/sprites';
 import { CleanInputs, CleanOutputs } from '@sprite-kit/common';
 
+// Polyfill WebSocket for Node.js environment
+if (typeof globalThis.WebSocket === 'undefined') {
+    try {
+        const ws = require('ws');
+        globalThis.WebSocket = ws.WebSocket || ws.default || ws;
+    } catch (error) {
+        console.warn('WebSocket polyfill failed to load:', error);
+    }
+}
+
 /**
  * Get inputs for the clean action
  */
@@ -14,9 +24,10 @@ export function getInputs(): CleanInputs {
     // If mode is current or if we have environment data but no explicit inputs, use current mode
     const spriteNameFromEnv = process.env.SPRITE_NAME;
 
-    // Auto-detect mode: if we have environment data and no explicit global inputs, use current mode
+    // Auto-detect mode: if SPRITE_NAME is available (init was run), default to current mode
+    // Only use global mode if explicitly requested or no sprite name available
     const mode = (modeInput as 'global' | 'current') ||
-        (spriteNameFromEnv && !core.getInput('sprite-prefix') && !core.getInput('max-age') ? 'current' : 'global');
+        (spriteNameFromEnv ? 'current' : 'global');
 
     return {
         token: core.getInput('token') || process.env.SPRITES_TOKEN,

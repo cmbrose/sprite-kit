@@ -1,6 +1,6 @@
 {
     "name": "sprite-kit",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "GitHub Actions for Sprite-backed persistent CI steps",
     "scripts": {
         "build": "npm run build:init && npm run build:run && npm run build:clean",

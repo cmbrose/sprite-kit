@@ -28321,6 +28321,9 @@ function formatCheckpointComment(metadata) {
   return `ghrun=${metadata.runId};job=${metadata.jobKey};step=${metadata.stepKey}`;
 }
 function parseCheckpointComment(comment) {
+  if (!comment) {
+    return void 0;
+  }
   const pattern = /ghrun=([^;]+);job=([^;]+);step=(.+)/;
   const match = comment.match(pattern);
   if (!match) {

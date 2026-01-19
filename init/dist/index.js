@@ -28351,6 +28351,9 @@ function deriveJobKey(context3) {
 // src/common/checkpoint.ts
 var core = __toESM(require_core());
 function parseCheckpointComment(comment) {
+  if (!comment) {
+    return void 0;
+  }
   const pattern = /ghrun=([^;]+);job=([^;]+);step=(.+)/;
   const match = comment.match(pattern);
   if (!match) {
@@ -28375,7 +28378,42 @@ function findLastCheckpointForJob(checkpoints, runId, jobKey) {
       return checkpoint.id;
     }
   }
-  return "v0";
+  return void 0;
+}
+async function restoreCheckpoint(sprite, comment) {
+  const response = await sprite.restoreCheckpoint(comment);
+  if (!response.body) {
+    throw new Error("Stream body is null");
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n").filter((line) => line.trim());
+      for (const line of lines) {
+        core.debug("restore: " + line);
+        try {
+          const message = JSON.parse(line);
+          if (message.type === "complete") {
+            return;
+          }
+          if (message.type === "error") {
+            throw new Error(`Restore error: ${message.error}`);
+          }
+        } catch {
+          continue;
+        }
+      }
+    }
+    throw new Error("No checkpoint version found in stream");
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 // src/common/withApiRetry.ts
@@ -28413,12 +28451,14 @@ if (typeof globalThis.WebSocket === "undefined") {
 async function getOrCreateSprite(client, spriteName, expectExist) {
   if (expectExist) {
     try {
-      return await withApiRetry(() => client.getSprite(spriteName));
+      const sprite2 = await withApiRetry(() => client.getSprite(spriteName));
+      return { sprite: sprite2, created: false };
     } catch (error) {
       core3.warning(`Failed to get sprite: ${error}`);
     }
   }
-  return await withApiRetry(() => client.createSprite(spriteName));
+  const sprite = await withApiRetry(() => client.createSprite(spriteName));
+  return { sprite, created: true };
 }
 function getInputs() {
   return {
@@ -28463,21 +28503,22 @@ async function run(ghContext) {
     core3.info(`Job key: ${jobKey}`);
     core3.info(`Run ID: ${runId}`);
     const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
-    const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
+    const { sprite, created } = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
     const checkpoints = await sprite.listCheckpoints();
     core3.info(`Found ${checkpoints.length} existing checkpoints`);
     const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
-    const needsRestore = lastCheckpointId !== "v0";
-    if (lastCheckpointId !== "v0") {
+    if (lastCheckpointId !== void 0) {
       core3.info(`Last successful checkpoint: ${lastCheckpointId}`);
+    } else if (!created && !lastCheckpointId) {
+      core3.info("Detected existing sprite with no checkpoints for this job, restoring to v0 checkpoint");
+      await restoreCheckpoint(sprite, "v0");
     } else {
-      core3.info("No previous checkpoint found for this job, defaulting initial checkpoint to v0");
+      core3.info("Created new sprite");
     }
     core3.setOutput("sprite-name", sprite.name);
     core3.setOutput("job-key", jobKey);
     core3.setOutput("run-id", runId);
     core3.setOutput("last-checkpoint-id", lastCheckpointId || "");
-    core3.setOutput("needs-restore", needsRestore.toString());
     core3.exportVariable("SPRITE_NAME", sprite.name);
     core3.exportVariable("SPRITE_JOB_KEY", jobKey);
     core3.exportVariable("SPRITE_RUN_ID", runId);

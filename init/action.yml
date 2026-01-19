@@ -29,8 +29,6 @@ outputs:
     description: 'The GitHub run ID'
   last-checkpoint-id:
     description: 'ID of the last successful checkpoint for this job, if any'
-  needs-restore:
-    description: 'Whether a restore from checkpoint is needed (true/false)'
 
 runs:
   using: 'node20'

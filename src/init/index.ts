@@ -6,7 +6,8 @@ import {
     deriveJobKey,
     findLastCheckpointForJob,
     GitHubContext,
-    InitInputs
+    InitInputs,
+    restoreCheckpoint
 } from '../common/index.js';
 import { withApiRetry } from '../common/withApiRetry.js';
 
@@ -25,16 +26,18 @@ async function getOrCreateSprite(
     client: SpritesClient,
     spriteName: string,
     expectExist: boolean
-): Promise<Sprite> {
+): Promise<{ sprite: Sprite; created: boolean }> {
     if (expectExist) {
         try {
-            return await withApiRetry(() => client.getSprite(spriteName));
+            const sprite = await withApiRetry(() => client.getSprite(spriteName));
+            return { sprite, created: false };
         } catch (error) {
             core.warning(`Failed to get sprite: ${error}`);
         }
     }
 
-    return await withApiRetry(() => client.createSprite(spriteName));
+    const sprite = await withApiRetry(() => client.createSprite(spriteName));
+    return { sprite, created: true };
 }
 
 /**
@@ -103,7 +106,7 @@ export async function run(
         // Initialize client
         const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
 
-        const sprite = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
+        const { sprite, created } = await getOrCreateSprite(client, spriteName, githubContext.runAttempt > 1);
 
         // List existing checkpoints
         const checkpoints = await sprite.listCheckpoints();
@@ -111,12 +114,15 @@ export async function run(
 
         // Find last successful checkpoint for this job
         const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
-        const needsRestore = lastCheckpointId !== 'v0';
 
-        if (lastCheckpointId !== 'v0') {
+        if (lastCheckpointId !== undefined) {
             core.info(`Last successful checkpoint: ${lastCheckpointId}`);
+        } else if (!created && !lastCheckpointId) {
+            core.info('Detected existing sprite with no checkpoints for this job, restoring to v0 checkpoint');
+            // v0 is a special checkpoint automatically created by Sprite on sprite creation
+            await restoreCheckpoint(sprite, 'v0');
         } else {
-            core.info('No previous checkpoint found for this job, defaulting initial checkpoint to v0');
+            core.info('Created new sprite');
         }
 
         // Set outputs
@@ -124,7 +130,6 @@ export async function run(
         core.setOutput('job-key', jobKey);
         core.setOutput('run-id', runId);
         core.setOutput('last-checkpoint-id', lastCheckpointId || '');
-        core.setOutput('needs-restore', needsRestore.toString());
 
         // Set environment variables for subsequent steps in the same job
         core.exportVariable('SPRITE_NAME', sprite.name);

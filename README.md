@@ -104,7 +104,6 @@ Establishes sprite identity and retrieves checkpoint state.
 | `job-key` | Job key for checkpoint matching |
 | `run-id` | GitHub run ID |
 | `last-checkpoint-id` | Last successful checkpoint ID (if any) |
-| `needs-restore` | Whether restore is needed (`true`/`false`) |
 
 ### Run Action (`cmbrose/sprite-kit/run`)
 

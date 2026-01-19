@@ -1,4 +1,5 @@
 import { Checkpoint, Sprite } from '@fly/sprites';
+import * as core from '@actions/core';
 
 /**
  * Checkpoint comment format and parsing utilities
@@ -243,6 +244,8 @@ export async function restoreCheckpoint(sprite: Sprite, comment: string): Promis
             const lines = chunk.split('\n').filter(line => line.trim());
 
             for (const line of lines) {
+                core.debug("restore: " + line);
+
                 try {
                     const message = JSON.parse(line);
 

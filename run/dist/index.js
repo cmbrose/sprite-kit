@@ -37677,6 +37677,7 @@ function deriveJobKey(context) {
 }
 
 ;// CONCATENATED MODULE: ../common/src/checkpoint.ts
+
 /**
  * Format checkpoint metadata into a comment string
  * Format: ghrun={run_id};job={job_key};step={step_key}
@@ -37862,6 +37863,7 @@ async function restoreCheckpoint(sprite, comment) {
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split('\n').filter(line => line.trim());
             for (const line of lines) {
+                core.debug("restore: " + line);
                 try {
                     const message = JSON.parse(line);
                     if (message.type === 'complete' && message.data) {

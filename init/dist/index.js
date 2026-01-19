@@ -36712,7 +36712,7 @@ __nccwpck_require__.d(__webpack_exports__, {
 });
 
 // EXTERNAL MODULE: ../node_modules/@actions/core/lib/core.js
-var core = __nccwpck_require__(6618);
+var lib_core = __nccwpck_require__(6618);
 // EXTERNAL MODULE: ../node_modules/@actions/github/lib/github.js
 var github = __nccwpck_require__(2146);
 // EXTERNAL MODULE: external "node:events"
@@ -37688,6 +37688,7 @@ function deriveJobKey(context) {
 }
 
 ;// CONCATENATED MODULE: ../common/src/checkpoint.ts
+
 /**
  * Format checkpoint metadata into a comment string
  * Format: ghrun={run_id};job={job_key};step={step_key}
@@ -37873,6 +37874,7 @@ async function restoreCheckpoint(sprite, comment) {
             const chunk = decoder.decode(value, { stream: true });
             const lines = chunk.split('\n').filter(line => line.trim());
             for (const line of lines) {
+                core.debug("restore: " + line);
                 try {
                     const message = JSON.parse(line);
                     if (message.type === 'complete' && message.data) {
@@ -37924,10 +37926,10 @@ if (typeof globalThis.WebSocket === 'undefined') {
  */
 function getInputs() {
     return {
-        token: core.getInput('token') || process.env.SPRITES_TOKEN,
-        apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
-        jobKey: core.getInput('job-key'),
-        matrixJson: core.getInput('matrix'),
+        token: lib_core.getInput('token') || process.env.SPRITES_TOKEN,
+        apiUrl: lib_core.getInput('api-url') || process.env.SPRITES_API_URL,
+        jobKey: lib_core.getInput('job-key'),
+        matrixJson: lib_core.getInput('matrix'),
     };
 }
 /**
@@ -37941,7 +37943,7 @@ function buildGitHubContext(inputs, ghContext = github.context) {
             matrix = JSON.parse(inputs.matrixJson);
         }
         catch (error) {
-            core.warning(`Failed to parse matrix JSON: ${error}`);
+            lib_core.warning(`Failed to parse matrix JSON: ${error}`);
         }
     }
     return {
@@ -37968,9 +37970,9 @@ async function run(ghContext) {
         const spriteName = generateSpriteName(githubContext);
         const jobKey = inputs.jobKey || deriveJobKey(githubContext);
         const runId = githubContext.runId;
-        core.info(`Sprite name: ${spriteName}`);
-        core.info(`Job key: ${jobKey}`);
-        core.info(`Run ID: ${runId}`);
+        lib_core.info(`Sprite name: ${spriteName}`);
+        lib_core.info(`Job key: ${jobKey}`);
+        lib_core.info(`Run ID: ${runId}`);
         // Initialize client
         const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
         // Create or get sprite
@@ -37983,35 +37985,35 @@ async function run(ghContext) {
         }
         // List existing checkpoints
         const checkpoints = await sprite.listCheckpoints();
-        core.info(`Found ${checkpoints.length} existing checkpoints`);
+        lib_core.info(`Found ${checkpoints.length} existing checkpoints`);
         // Find last successful checkpoint for this job
         const lastCheckpointId = findLastCheckpointForJob(checkpoints, runId, jobKey);
         const needsRestore = lastCheckpointId !== null && checkpoints.length > 0;
         if (lastCheckpointId) {
-            core.info(`Last successful checkpoint: ${lastCheckpointId}`);
+            lib_core.info(`Last successful checkpoint: ${lastCheckpointId}`);
         }
         else {
-            core.info('No previous checkpoint found for this job');
+            lib_core.info('No previous checkpoint found for this job');
         }
         // Set outputs
-        core.setOutput('sprite-name', sprite.name);
-        core.setOutput('job-key', jobKey);
-        core.setOutput('run-id', runId);
-        core.setOutput('last-checkpoint-id', lastCheckpointId || '');
-        core.setOutput('needs-restore', needsRestore.toString());
+        lib_core.setOutput('sprite-name', sprite.name);
+        lib_core.setOutput('job-key', jobKey);
+        lib_core.setOutput('run-id', runId);
+        lib_core.setOutput('last-checkpoint-id', lastCheckpointId || '');
+        lib_core.setOutput('needs-restore', needsRestore.toString());
         // Set environment variables for subsequent steps in the same job
-        core.exportVariable('SPRITE_NAME', sprite.name);
-        core.exportVariable('SPRITE_JOB_KEY', jobKey);
-        core.exportVariable('SPRITE_RUN_ID', runId);
-        core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', lastCheckpointId || '');
-        core.info('Init action completed successfully');
+        lib_core.exportVariable('SPRITE_NAME', sprite.name);
+        lib_core.exportVariable('SPRITE_JOB_KEY', jobKey);
+        lib_core.exportVariable('SPRITE_RUN_ID', runId);
+        lib_core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', lastCheckpointId || '');
+        lib_core.info('Init action completed successfully');
     }
     catch (error) {
         if (error instanceof Error) {
-            core.setFailed(error.message);
+            lib_core.setFailed(error.message);
         }
         else {
-            core.setFailed('An unknown error occurred' + String(error));
+            lib_core.setFailed('An unknown error occurred' + String(error));
         }
     }
 }

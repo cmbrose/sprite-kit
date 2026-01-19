@@ -47,6 +47,9 @@ jobs:
             echo "written-by-step1-attempt-${{ github.run_attempt }}" > marker.txt
             echo "Marker file written successfully"
 
+            export TEST_ENV_VAR="test-value"
+            echo "set TEST_ENV_VAR=$TEST_ENV_VAR"
+
       - name: Verify Step 1 behavior
         run: |
           echo "Step 1 skipped: ${{ steps.step1.outputs.skipped }}"
@@ -93,6 +96,11 @@ jobs:
               exit 1
             fi
 
+            if [ -z "$TEST_ENV_VAR" ]; then
+              echo "ERROR: TEST_ENV_VAR is not set - environment variables were not restored!"
+              exit 1
+            fi
+
             echo "Checkpoint verification passed - marker file exists with correct content"
 
             # This step fails on first attempt, succeeds on retry
@@ -100,12 +108,6 @@ jobs:
               echo "First attempt - intentionally failing to test retry"
               exit 1
             fi
-
-            echo "Retry attempt - SUCCESS!"
-            echo "The retry smoke test has passed. This proves:"
-            echo "  1. Step 1 was correctly skipped on retry (or it would have failed)"
-            echo "  2. The checkpoint was restored (marker file exists)"
-            echo "  3. Step 2 was re-run on retry and succeeded"
 
       # Only cleanup on success - if we cleanup on failure, the checkpoint
       # won't exist for the retry to restore from

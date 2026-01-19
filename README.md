@@ -118,8 +118,8 @@ Executes a step with checkpoint management.
 
 | Input | Required | Description |
 |-------|----------|-------------|
-| `step-key` | Yes | Unique step identifier within the job |
 | `run` | Yes | Bash command(s) to execute |
+| `step-key` | No | Unique step identifier within the job. Uses the `GITHUB_ACTION` env var if not set. |
 | `token` | No | Sprites API token. Falls back to `SPRITES_TOKEN` env var. |
 | `api-url` | No | Sprites API URL |
 | `sprite-name` | No | Sprite name (auto-retrieved from init state) |

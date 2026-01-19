@@ -37956,14 +37956,10 @@ async function run(inputsOverride) {
                 reject(err);
             });
         });
-        await command.start();
-        try {
+        command.on('spawn', () => {
             command.stdin.write(inputs.run + '\n');
             command.stdin.end();
-        }
-        catch (error) {
-            core.warning(`Failed to write to stdin: ${error}`);
-        }
+        });
         exitCode = await exitCodePromise;
         if (exitCode !== 0) {
             throw new Error(`Command exited with code ${exitCode}`);

@@ -181,13 +181,10 @@ export async function run(
             });
         });
 
-        await command.start();
-        try {
+        command.on('spawn', () => {
             command.stdin.write(inputs.run + '\n');
             command.stdin.end();
-        } catch (error) {
-            core.warning(`Failed to write to stdin: ${error}`);
-        }
+        });
 
         exitCode = await exitCodePromise;
 

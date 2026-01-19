@@ -158,17 +158,25 @@ export async function run(
         core.startGroup(`Running command:`);
 
         const result = sprite.spawn(
-            'bash',
-            ['-i'],
+            '/bin/bash',
+            [],
             {
                 cwd: inputs.workdir,
             });
 
-        result.stdin.write(inputs.run + '\n');
-        result.stdin.end();
+        try {
+            result.stdin.write(inputs.run + '\n');
+            result.stdin.end();
+        } catch (error) {
+            core.warning(`Failed to write to stdin: ${error}`);
+        }
 
         result.stdout.on('data', (data: Buffer) => {
-            core.info(data.toString());
+            core.info("out: " + data.toString());
+        });
+
+        result.stderr.on('data', (data: Buffer) => {
+            core.error("err: " + data.toString());
         });
 
         let exitCode = await new Promise<number>((resolve, reject) => {

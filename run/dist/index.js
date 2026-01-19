@@ -37939,13 +37939,21 @@ async function run(inputsOverride) {
         // Execute the command
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running command:`);
-        const result = sprite.spawn('bash', ['-i'], {
+        const result = sprite.spawn('/bin/bash', [], {
             cwd: inputs.workdir,
         });
-        result.stdin.write(inputs.run + '\n');
-        result.stdin.end();
+        try {
+            result.stdin.write(inputs.run + '\n');
+            result.stdin.end();
+        }
+        catch (error) {
+            core.warning(`Failed to write to stdin: ${error}`);
+        }
         result.stdout.on('data', (data) => {
-            core.info(data.toString());
+            core.info("out: " + data.toString());
+        });
+        result.stderr.on('data', (data) => {
+            core.error("err: " + data.toString());
         });
         let exitCode = await new Promise((resolve, reject) => {
             result.on('exit', (code) => {

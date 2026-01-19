@@ -161,6 +161,7 @@ export async function run(
             '/bin/bash',
             [],
             {
+                tty: true,
                 cwd: inputs.workdir,
             });
 

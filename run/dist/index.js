@@ -37940,6 +37940,7 @@ async function run(inputsOverride) {
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running command:`);
         const result = sprite.spawn('/bin/bash', [], {
+            tty: true,
             cwd: inputs.workdir,
         });
         try {

@@ -47,7 +47,6 @@ jobs:
         id: clone
         uses: ./run
         with:
-          step-key: clone-vscode
           run: |
             set -e
 
@@ -65,7 +64,6 @@ jobs:
         id: node-setup
         uses: ./run
         with:
-          step-key: setup-nodejs
           run: |
             set -e
 
@@ -89,7 +87,6 @@ jobs:
         id: system-deps
         uses: ./run
         with:
-          step-key: install-system-deps
           run: |
             set -e
 
@@ -117,7 +114,6 @@ jobs:
         id: setup
         uses: ./run
         with:
-          step-key: setup-npm-deps
           workdir: vscode
           run: |
             set -e
@@ -142,7 +138,6 @@ jobs:
         id: build
         uses: ./run
         with:
-          step-key: build-core
           workdir: vscode
           run: |
             set -e
@@ -168,7 +163,6 @@ jobs:
         id: test
         uses: ./run
         with:
-          step-key: run-tests
           workdir: vscode
           run: |
             echo "🧪 Running basic VSCode tests..."
@@ -193,7 +187,6 @@ jobs:
       - name: 📈 Show Final Stats
         uses: ./run
         with:
-          step-key: show-stats
           workdir: vscode
           run: |
             echo "📈 Final Build Statistics:"

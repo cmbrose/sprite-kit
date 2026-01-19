@@ -28,8 +28,8 @@ if (typeof globalThis.WebSocket === 'undefined') {
  */
 export function getInputs(): Partial<RunInputs> {
     return {
-        stepKey: core.getInput('step-key', { required: true }),
         run: core.getInput('run', { required: true }),
+        stepKey: core.getInput('step-key') || process.env.GITHUB_ACTION,
         token: core.getInput('token') || process.env.SPRITES_TOKEN,
         apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
         spriteName: core.getInput('sprite-name') || process.env.SPRITE_NAME,

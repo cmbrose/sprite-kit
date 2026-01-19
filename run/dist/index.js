@@ -28450,8 +28450,8 @@ if (typeof globalThis.WebSocket === "undefined") {
 }
 function getInputs() {
   return {
-    stepKey: core2.getInput("step-key", { required: true }),
     run: core2.getInput("run", { required: true }),
+    stepKey: core2.getInput("step-key") || process.env.GITHUB_ACTION,
     token: core2.getInput("token") || process.env.SPRITES_TOKEN,
     apiUrl: core2.getInput("api-url") || process.env.SPRITES_API_URL,
     spriteName: core2.getInput("sprite-name") || process.env.SPRITE_NAME,

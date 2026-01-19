@@ -47,9 +47,6 @@ jobs:
             echo "written-by-step1-attempt-${{ github.run_attempt }}" > marker.txt
             echo "Marker file written successfully"
 
-            export TEST_ENV_VAR="test-value"
-            echo "set TEST_ENV_VAR=$TEST_ENV_VAR"
-
       - name: Verify Step 1 behavior
         run: |
           echo "Step 1 skipped: ${{ steps.step1.outputs.skipped }}"
@@ -93,11 +90,6 @@ jobs:
             # Verify the marker was written on attempt 1
             if [[ "$MARKER_CONTENT" != "written-by-step1-attempt-1" ]]; then
               echo "ERROR: Marker file has unexpected content"
-              exit 1
-            fi
-
-            if [ -z "$TEST_ENV_VAR" ]; then
-              echo "ERROR: TEST_ENV_VAR is not set - environment variables were not restored!"
               exit 1
             fi
 

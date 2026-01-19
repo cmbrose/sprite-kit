@@ -37938,21 +37938,27 @@ async function run(inputsOverride) {
         }
         // Execute the command
         core.info(`Executing step: ${stepKey}`);
-        core.startGroup(`Running: ${inputs.run}`);
-        try {
-            const result = await sprite.exec(inputs.run, {
-                cwd: inputs.workdir,
+        core.startGroup(`Running command:`);
+        const result = sprite.spawn('bash', ['-i'], {
+            cwd: inputs.workdir,
+        });
+        result.stdin.write(inputs.run + '\n');
+        result.stdin.end();
+        result.stdout.on('data', (data) => {
+            core.info(data.toString());
+        });
+        let exitCode = await new Promise((resolve, reject) => {
+            result.on('exit', (code) => {
+                resolve(code);
             });
-            exitCode = result.exitCode;
-            core.endGroup();
-            if (exitCode !== 0) {
-                throw new Error(`Command exited with code ${exitCode}`);
-            }
+            result.on('error', (err) => {
+                reject(err);
+            });
+        });
+        if (exitCode !== 0) {
+            throw new Error(`Command exited with code ${exitCode}`);
         }
-        catch (execError) {
-            core.endGroup();
-            throw execError;
-        }
+        core.endGroup();
         // Create checkpoint on success
         const comment = formatCheckpointComment({ runId, jobKey, stepKey });
         const checkpointResponse = await sprite.createCheckpoint(comment);

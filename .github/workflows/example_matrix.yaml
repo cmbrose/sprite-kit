@@ -1,0 +1,45 @@
+name: Example - Matrix Workflow
+
+on:
+  workflow_dispatch:
+
+env:
+  SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
+
+jobs:
+  matrix-workflow:
+    name: Matrix Workflow
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: [a, b]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init Sprite
+        id: init
+        uses: ./src/init
+        with:
+          matrix: ${{ toJson(matrix) }}
+
+      - name: Verify unique sprite name contains matrix hash
+        run: |
+          SPRITE_NAME="${{ steps.init.outputs.sprite-name }}"
+          echo "Sprite name for variant ${{ matrix.variant }}: $SPRITE_NAME"
+
+          # Sprite name should end with a hash when matrix is provided
+          if [[ ! "$SPRITE_NAME" =~ -[a-f0-9]{8}$ ]]; then
+            echo "ERROR: Sprite name should contain matrix hash suffix"
+            exit 1
+          fi
+
+      - name: Run step specific to matrix variant
+        id: step1
+        uses: ./src/run
+        with:
+          step-key: variant-step
+          run: echo "Running variant ${{ matrix.variant }}"
+
+      - name: Cleanup Sprite
+        if: always()
+        uses: ./src/clean

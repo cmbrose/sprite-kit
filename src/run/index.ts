@@ -15,6 +15,7 @@ import { withApiRetry } from '../common/withApiRetry.js';
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const ws = require('ws');
         globalThis.WebSocket = ws.WebSocket || ws.default || ws;
     } catch (error) {

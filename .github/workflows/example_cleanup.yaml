@@ -1,0 +1,30 @@
+name: Example - Cleanup Test
+
+on:
+  workflow_dispatch:
+
+env:
+  SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
+
+jobs:
+  cleanup-test:
+    name: Cleanup Action Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init Sprite
+        id: init
+        uses: ./src/init
+
+      - name: Run a step
+        uses: ./src/run
+        with:
+          step-key: test
+          run: echo "Test"
+
+      - name: Cleanup specific sprite
+        uses: ./src/clean
+
+      - name: Verify cleanup completed
+        run: echo "Cleanup completed successfully"

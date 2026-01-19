@@ -7,6 +7,7 @@ import { withApiRetry } from '../common/withApiRetry.js';
 // Polyfill WebSocket for Node.js environment
 if (typeof globalThis.WebSocket === 'undefined') {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const ws = require('ws');
         globalThis.WebSocket = ws.WebSocket || ws.default || ws;
     } catch (error) {
@@ -261,8 +262,7 @@ export async function run(inputsOverride?: Partial<CleanInputs>): Promise<void> 
         core.setOutput('sprites-found', result.spritesFound.toString());
         core.setOutput('dry-run', result.dryRun.toString());
         core.setOutput('mode', result.mode);
-
-    } catch (error) {
+    } catch {
         // Error handling already done in clean() function
         // Just ensure we don't throw again
     }

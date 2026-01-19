@@ -28,6 +28,7 @@ export function hashString(input: string): string {
  * Derive a matrix discriminator from GitHub context
  */
 export function deriveMatrixKey(): string | undefined {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matrix = context.job ? (context as any).matrix : undefined;
     if (!matrix || Object.keys(matrix).length === 0) {
         return undefined;

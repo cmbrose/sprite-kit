@@ -4,24 +4,23 @@ export async function withApiRetry<T>(
     delayMs: number = 1000
 ): Promise<T> {
     let attempt = 0;
-    let lastError: any;
 
-    while (attempt <= retries) {
+    while (true) {
         try {
             return await fn();
-        } catch (error: any) {
-            if (error.response && error.response.status >= 500) {
+        } catch (error) {
+            const err = error as { response?: { status?: number } };
+            if (err.response && err.response.status && err.response.status >= 500) {
                 if (attempt < retries) {
                     console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
                     attempt++;
-                    await new Promise(resolve => setTimeout(resolve, attempt * delayMs));
-                    continue;
                 }
             }
-            lastError = error;
-            break;
+
+            if (attempt > retries) {
+                throw error;
+            }
+            await new Promise(resolve => setTimeout(resolve, attempt * delayMs));
         }
     }
-
-    throw lastError;
 }

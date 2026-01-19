@@ -1,0 +1,39 @@
+name: Example - Workdir Test
+
+on:
+  workflow_dispatch:
+
+env:
+  SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
+
+jobs:
+  workdir-test:
+    name: Workdir Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init Sprite
+        id: init
+        uses: ./src/init
+
+      - name: Create directory and file
+        uses: ./src/run
+        with:
+          step-key: create-dir
+          run: |
+            mkdir -p /tmp/testdir
+            echo "test content" > /tmp/testdir/testfile.txt
+
+      - name: Verify workdir option
+        uses: ./src/run
+        with:
+          step-key: check-workdir
+          workdir: /tmp/testdir
+          run: |
+            pwd
+            cat testfile.txt
+
+      - name: Cleanup Sprite
+        if: always()
+        uses: ./src/clean

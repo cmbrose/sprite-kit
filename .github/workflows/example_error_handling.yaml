@@ -1,0 +1,47 @@
+name: Example - Error Handling
+
+on:
+  workflow_dispatch:
+
+env:
+  SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
+
+jobs:
+  error-handling:
+    name: Error Handling
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Init Sprite
+        id: init
+        uses: ./src/init
+
+      - name: Successful step
+        id: success-step
+        uses: ./src/run
+        with:
+          step-key: success
+          run: echo "This should succeed"
+
+      - name: Failing step (expected)
+        id: fail-step
+        uses: ./src/run
+        continue-on-error: true
+        with:
+          step-key: failure
+          run: exit 1
+
+      - name: Verify failure was captured
+        run: |
+          echo "Exit code: ${{ steps.fail-step.outputs.exit-code }}"
+
+          # Should have non-zero exit code
+          test "${{ steps.fail-step.outputs.exit-code }}" = "1" || exit 1
+
+          # Should not have created a checkpoint
+          test -z "${{ steps.fail-step.outputs.checkpoint-id }}" || test "${{ steps.fail-step.outputs.checkpoint-id }}" = "" || exit 1
+
+      - name: Cleanup Sprite
+        if: always()
+        uses: ./src/clean

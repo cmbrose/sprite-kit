@@ -190,7 +190,7 @@ export async function createCheckpoint(sprite: Sprite, comment: string): Promise
                     if (message.type === 'error') {
                         throw new Error(`Checkpoint error: ${message.error}`);
                     }
-                } catch (e) {
+                } catch {
                     // Skip invalid JSON lines
                     continue;
                 }
@@ -265,7 +265,7 @@ export async function restoreCheckpoint(sprite: Sprite, comment: string): Promis
                     if (message.type === 'error') {
                         throw new Error(`Restore error: ${message.error}`);
                     }
-                } catch (e) {
+                } catch {
                     // Skip invalid JSON lines
                     continue;
                 }

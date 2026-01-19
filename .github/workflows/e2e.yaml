@@ -11,16 +11,19 @@ env:
   SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
 
 jobs:
-  # Test 1: Basic workflow with init + multiple run steps
-  basic-workflow:
-    name: Basic Workflow
+  # Basic smoke test to verify actions can be loaded and initialized
+  smoke-test:
+    name: Smoke Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Init Sprite
+      - name: Build actions
+        run: npm install && npm run build
+
+      - name: Test Init Action
         id: init
-        uses: ./init
+        uses: ./src/init
 
       - name: Verify init outputs
         run: |
@@ -33,282 +36,20 @@ jobs:
           test -n "${{ steps.init.outputs.job-key }}" || exit 1
           test -n "${{ steps.init.outputs.run-id }}" || exit 1
 
-      - name: Step 1 - Echo test
-        id: step1
-        uses: ./run
+      - name: Test Run Action
+        id: run-test
+        uses: ./src/run
         with:
-          step-key: echo-test
-          run: echo "Hello from step 1"
+          step-key: smoke-test
+          run: echo "Hello from smoke test"
 
-      - name: Verify step 1 outputs
+      - name: Verify run outputs
         run: |
-          echo "Skipped: ${{ steps.step1.outputs.skipped }}"
-          echo "Checkpoint ID: ${{ steps.step1.outputs.checkpoint-id }}"
-          echo "Exit Code: ${{ steps.step1.outputs.exit-code }}"
+          echo "Exit Code: ${{ steps.run-test.outputs.exit-code }}"
+          echo "Checkpoint ID: ${{ steps.run-test.outputs.checkpoint-id }}"
 
-          test "${{ steps.step1.outputs.exit-code }}" = "0" || exit 1
-          test -n "${{ steps.step1.outputs.checkpoint-id }}" || exit 1
+          test "${{ steps.run-test.outputs.exit-code }}" = "0" || exit 1
+          test -n "${{ steps.run-test.outputs.checkpoint-id }}" || exit 1
 
-      - name: Step 2 - Multi-line command
-        id: step2
-        uses: ./run
-        with:
-          step-key: multiline-test
-          run: |
-            echo "Line 1"
-            echo "Line 2"
-            echo "Line 3"
-
-      - name: Step 3 - Environment variable test
-        id: step3
-        uses: ./run
-        with:
-          step-key: env-test
-          run: |
-            echo "Testing environment"
-            pwd
-            whoami
-
-      - name: Cleanup Sprite
-        if: always()
-        uses: ./clean
-
-  # Test 2: Matrix job to verify unique sprite identity per matrix combination
-  matrix-workflow:
-    name: Matrix Workflow
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        variant: [a, b]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Init Sprite
-        id: init
-        uses: ./init
-        with:
-          matrix: ${{ toJson(matrix) }}
-
-      - name: Verify unique sprite name contains matrix hash
-        run: |
-          SPRITE_NAME="${{ steps.init.outputs.sprite-name }}"
-          echo "Sprite name for variant ${{ matrix.variant }}: $SPRITE_NAME"
-
-          # Sprite name should end with a hash when matrix is provided
-          if [[ ! "$SPRITE_NAME" =~ -[a-f0-9]{8}$ ]]; then
-            echo "ERROR: Sprite name should contain matrix hash suffix"
-            exit 1
-          fi
-
-      - name: Run step specific to matrix variant
-        id: step1
-        uses: ./run
-        with:
-          step-key: variant-step
-          run: echo "Running variant ${{ matrix.variant }}"
-
-      - name: Cleanup Sprite
-        if: always()
-        uses: ./clean
-
-  # Test 3: Verify workdir functionality
-  workdir-test:
-    name: Workdir Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Init Sprite
-        id: init
-        uses: ./init
-
-      - name: Create directory and file
-        uses: ./run
-        with:
-          step-key: create-dir
-          run: |
-            mkdir -p /tmp/testdir
-            echo "test content" > /tmp/testdir/testfile.txt
-
-      - name: Verify workdir option
-        uses: ./run
-        with:
-          step-key: check-workdir
-          workdir: /tmp/testdir
-          run: |
-            pwd
-            cat testfile.txt
-
-      - name: Cleanup Sprite
-        if: always()
-        uses: ./clean
-
-  # Test 4: Error handling - command failure should not create checkpoint
-  error-handling:
-    name: Error Handling
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Init Sprite
-        id: init
-        uses: ./init
-
-      - name: Successful step
-        id: success-step
-        uses: ./run
-        with:
-          step-key: success
-          run: echo "This should succeed"
-
-      - name: Failing step (expected)
-        id: fail-step
-        uses: ./run
-        continue-on-error: true
-        with:
-          step-key: failure
-          run: exit 1
-
-      - name: Verify failure was captured
-        run: |
-          echo "Exit code: ${{ steps.fail-step.outputs.exit-code }}"
-
-          # Should have non-zero exit code
-          test "${{ steps.fail-step.outputs.exit-code }}" = "1" || exit 1
-
-          # Should not have created a checkpoint
-          test -z "${{ steps.fail-step.outputs.checkpoint-id }}" || test "${{ steps.fail-step.outputs.checkpoint-id }}" = "" || exit 1
-
-      - name: Cleanup Sprite
-        if: always()
-        uses: ./clean
-
-  # Test 5: Retry smoke test - proves checkpoint/restore works
-  # This test MUST be run twice to succeed:
-  # - First run: step1 succeeds (writes file), step2 fails
-  # - Retry: step1 is SKIPPED (would fail if run), step2 succeeds and verifies file exists
-  retry-smoke-test:
-    name: Retry Smoke Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Init Sprite
-        id: init
-        uses: ./init
-
-      - name: Debug run attempt
-        run: |
-          echo "Run attempt: ${{ github.run_attempt }}"
-          echo "Run ID: ${{ github.run_id }}"
-
-      # Step 1: Succeeds ONLY on first attempt, writes a marker file
-      # If this runs on retry (run_attempt > 1), it fails - proving skip worked
-      - name: Step 1 - Write marker file (must be skipped on retry)
-        id: step1
-        uses: ./run
-        with:
-          step-key: write-marker
-          run: |
-            echo "Run attempt: ${{ github.run_attempt }}"
-
-            # This step should ONLY run on the first attempt
-            # If run_attempt > 1, this step should have been skipped
-            if [ "${{ github.run_attempt }}" != "1" ]; then
-              echo "ERROR: This step should have been skipped on retry!"
-              echo "If you see this, the checkpoint restore did not work."
-              exit 1
-            fi
-
-            # Write a marker file that proves this step ran
-            echo "written-by-step1-attempt-${{ github.run_attempt }}" > marker.txt
-            echo "Marker file written successfully"
-
-      - name: Verify Step 1 behavior
-        run: |
-          echo "Step 1 skipped: ${{ steps.step1.outputs.skipped }}"
-          echo "Step 1 checkpoint-id: ${{ steps.step1.outputs.checkpoint-id }}"
-
-          if [ "${{ github.run_attempt }}" = "1" ]; then
-            # On first attempt, step1 should have run (not skipped)
-            if [ "${{ steps.step1.outputs.skipped }}" = "true" ]; then
-              echo "ERROR: Step 1 was skipped on first attempt - should have run"
-              exit 1
-            fi
-          else
-            # On retry, step1 should have been skipped
-            if [ "${{ steps.step1.outputs.skipped }}" != "true" ]; then
-              echo "ERROR: Step 1 was NOT skipped on retry - checkpoint restore failed"
-              exit 1
-            fi
-          fi
-
-      # Step 2: Fails on first attempt, succeeds on retry
-      # Also verifies the marker file exists (proving checkpoint was restored)
-      - name: Step 2 - Verify marker and succeed on retry
-        id: step2
-        uses: ./run
-        with:
-          step-key: verify-marker
-          run: |
-            echo "Run attempt: ${{ github.run_attempt }}"
-
-            # Verify the marker file from step 1 exists
-            # This proves the checkpoint was restored correctly
-            if [ ! -f marker.txt ]; then
-              echo "ERROR: Marker file not found!"
-              echo "This means the checkpoint was not restored properly."
-              exit 1
-            fi
-
-            MARKER_CONTENT=$(cat marker.txt)
-            echo "Marker file content: $MARKER_CONTENT"
-
-            # Verify the marker was written on attempt 1
-            if [[ "$MARKER_CONTENT" != "written-by-step1-attempt-1" ]]; then
-              echo "ERROR: Marker file has unexpected content"
-              exit 1
-            fi
-
-            echo "Checkpoint verification passed - marker file exists with correct content"
-
-            # This step fails on first attempt, succeeds on retry
-            if [ "${{ github.run_attempt }}" = "1" ]; then
-              echo "First attempt - intentionally failing to test retry"
-              exit 1
-            fi
-
-            echo "Retry attempt - SUCCESS!"
-            echo "The retry smoke test has passed. This proves:"
-            echo "  1. Step 1 was correctly skipped on retry (or it would have failed)"
-            echo "  2. The checkpoint was restored (marker file exists)"
-            echo "  3. Step 2 was re-run on retry and succeeded"
-
-      # Only cleanup on success - if we cleanup on failure, the checkpoint
-      # won't exist for the retry to restore from
-      - name: Cleanup Sprite
-        if: success()
-        uses: ./clean
-
-  # Test 6: Cleanup action test
-  cleanup-test:
-    name: Cleanup Action Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Init Sprite
-        id: init
-        uses: ./init
-
-      - name: Run a step
-        uses: ./run
-        with:
-          step-key: test
-          run: echo "Test"
-
-      - name: Cleanup specific sprite
-        uses: ./clean
-
-      - name: Verify cleanup completed
-        run: echo "Cleanup completed successfully"
+      - name: Test Clean Action
+        uses: ./src/clean

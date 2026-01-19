@@ -4,9 +4,9 @@
     "description": "GitHub Actions for Sprite-backed persistent CI steps",
     "scripts": {
         "build": "npm run build:init && npm run build:run && npm run build:clean",
-        "build:init": "esbuild src/init/index.ts --bundle --platform=node --target=node20 --outfile=dist/init/index.js --sourcemap",
-        "build:run": "esbuild src/run/index.ts --bundle --platform=node --target=node20 --outfile=dist/run/index.js --sourcemap",
-        "build:clean": "esbuild src/clean/index.ts --bundle --platform=node --target=node20 --outfile=dist/clean/index.js --sourcemap",
+        "build:init": "esbuild src/init/index.ts --bundle --platform=node --target=node20 --outfile=init/dist/index.js --sourcemap",
+        "build:run": "esbuild src/run/index.ts --bundle --platform=node --target=node20 --outfile=run/dist/index.js --sourcemap",
+        "build:clean": "esbuild src/clean/index.ts --bundle --platform=node --target=node20 --outfile=clean/dist/index.js --sourcemap",
         "lint": "eslint .",
         "typecheck": "tsc --noEmit",
         "test": "jest",

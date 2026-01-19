@@ -28381,24 +28381,23 @@ function findLastCheckpointForJob(checkpoints, runId, jobKey) {
 // src/common/withApiRetry.ts
 async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
   let attempt = 0;
-  let lastError;
-  while (attempt <= retries) {
+  while (true) {
     try {
       return await fn();
     } catch (error) {
-      if (error.response && error.response.status >= 500) {
+      const err = error;
+      if (err.response && err.response.status && err.response.status >= 500) {
         if (attempt < retries) {
           console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
           attempt++;
-          await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
-          continue;
         }
       }
-      lastError = error;
-      break;
+      if (attempt > retries) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
     }
   }
-  throw lastError;
 }
 
 // src/init/index.ts

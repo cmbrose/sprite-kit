@@ -28371,7 +28371,7 @@ async function createCheckpoint(sprite, comment) {
           if (message.type === "error") {
             throw new Error(`Checkpoint error: ${message.error}`);
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -28406,7 +28406,7 @@ async function restoreCheckpoint(sprite, comment) {
           if (message.type === "error") {
             throw new Error(`Restore error: ${message.error}`);
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -28420,24 +28420,23 @@ async function restoreCheckpoint(sprite, comment) {
 // src/common/withApiRetry.ts
 async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
   let attempt = 0;
-  let lastError;
-  while (attempt <= retries) {
+  while (true) {
     try {
       return await fn();
     } catch (error2) {
-      if (error2.response && error2.response.status >= 500) {
+      const err = error2;
+      if (err.response && err.response.status && err.response.status >= 500) {
         if (attempt < retries) {
           console.warn(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
           attempt++;
-          await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
-          continue;
         }
       }
-      lastError = error2;
-      break;
+      if (attempt > retries) {
+        throw error2;
+      }
+      await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
     }
   }
-  throw lastError;
 }
 
 // src/run/index.ts
@@ -28544,10 +28543,10 @@ async function run(inputsOverride) {
       cwd: inputs.workdir
     });
     command.stdout.on("data", (data) => {
-      core2.info("out: " + data.toString());
+      core2.info(data.toString());
     });
     command.stderr.on("data", (data) => {
-      core2.error("err: " + data.toString());
+      core2.error(data.toString());
     });
     exitCode = await command.wait();
     if (exitCode !== 0) {

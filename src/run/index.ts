@@ -166,11 +166,11 @@ export async function run(
         });
 
         command.stdout.on('data', (data: Buffer) => {
-            core.info("out: " + data.toString());
+            core.info(data.toString());
         });
 
         command.stderr.on('data', (data: Buffer) => {
-            core.error("err: " + data.toString());
+            core.error(data.toString());
         });
 
         exitCode = await command.wait();

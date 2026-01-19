@@ -25693,7 +25693,10 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 const TRANSIENT_ERROR_CODES = [408, 429, 500, 502, 503, 504];
 /**
- * Sprites API client with automatic retry for transient errors
+ * Sprites API client
+ *
+ * All endpoints use sprite NAME (not ID) in the path according to API spec.
+ * Implements retry logic for transient errors only.
  */
 class SpritesClient {
     apiUrl;
@@ -25701,185 +25704,66 @@ class SpritesClient {
     constructor(token, apiUrl) {
         this.token = token;
         this.apiUrl = apiUrl || DEFAULT_API_URL;
-        // Mask the token in logs
         core.setSecret(token);
     }
     /**
      * Create a new sprite or retrieve existing one by name
+     * GET /v1/sprites/{name} - returns 404 if not found (no retry)
+     * POST /v1/sprites - creates new sprite
      */
     async createOrGetSprite(options) {
-        // First try to get existing sprite by name
+        // Try to get existing sprite
         try {
-            const existing = await this.getSprite(options.name);
-            if (existing) {
-                core.info(`Found existing sprite: ${existing.id}`);
-                return existing;
-            }
+            const sprite = await this.getSprite(options.name);
+            core.info(`Found existing sprite: ${sprite.id}`);
+            return sprite;
         }
         catch (error) {
-            // Sprite doesn't exist, create new one
-            core.debug(`Sprite not found, creating new one: ${options.name}`);
+            // If 404, sprite doesn't exist - create it
+            if (error.status === 404) {
+                core.debug(`Sprite not found, creating new one: ${options.name}`);
+            }
+            else {
+                // Other errors (auth, network, etc) should bubble up
+                throw error;
+            }
         }
-        const response = await this.request({
+        // Create new sprite
+        const sprite = await this.request({
             method: 'POST',
             path: '/sprites',
-            body: options,
+            body: { name: options.name },
         });
-        core.info(`Created new sprite: ${response.id}`);
-        return response;
+        core.info(`Created new sprite: ${sprite.id}`);
+        return sprite;
     }
     /**
      * Get a sprite by name
+     * GET /v1/sprites/{name}
+     * Returns 404 if not found - no retry
      */
     async getSprite(spriteName) {
         return this.request({
             method: 'GET',
-            path: `/sprites/${spriteName}`
-        });
-    }
-    /**
-     * List checkpoints for a sprite
-     */
-    async listCheckpoints(spriteName) {
-        return this.request({
-            method: 'GET',
-            path: `/sprites/${spriteName}/checkpoints`,
-        });
-    }
-    /**
-     * Get checkpoint by name
-     */
-    async getCheckpoint(spriteName, checkpointId) {
-        return this.request({
-            method: 'GET',
-            path: `/sprites/${spriteName}/checkpoints/${checkpointId}`,
-        });
-    }
-    /**
-     * Create a new checkpoint using POST /v1/sprites/{name}/checkpoint
-     */
-    async createCheckpoint(options) {
-        const response = await this.request({
-            method: 'POST',
-            path: `/sprites/${options.spriteName}/checkpoint`,
-            body: { comment: options.comment },
-        });
-        core.info(`Created checkpoint: ${response.id}`);
-        return response;
-    }
-    /**
-     * Restore a sprite from a checkpoint
-     */
-    async restoreCheckpoint(spriteName, checkpointId) {
-        await this.request({
-            method: 'POST',
-            path: `/sprites/${spriteName}/checkpoints/${checkpointId}/restore`,
-        });
-        core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
-    }
-    /**
-     * Execute a command in a sprite with streaming output
-     */
-    async exec(options) {
-        const { spriteName, command, workdir, env } = options;
-        core.info(`Executing command in sprite ${spriteName}`);
-        core.debug(`Command: ${command}`);
-        const result = await this.execWithStreaming(spriteName, {
-            command,
-            workdir,
-            env,
-        });
-        return result;
-    }
-    /**
-     * Execute command with streaming stdout/stderr
-     */
-    async execWithStreaming(spriteName, body) {
-        return new Promise((resolve, reject) => {
-            const url = new url_1.URL(`${this.apiUrl}/sprites/${spriteName}/exec`);
-            const isHttps = url.protocol === 'https:';
-            const httpModule = isHttps ? https : http;
-            const requestBody = JSON.stringify(body);
-            const requestOptions = {
-                hostname: url.hostname,
-                port: url.port || (isHttps ? 443 : 80),
-                path: url.pathname,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(requestBody),
-                    Authorization: `Bearer ${this.token}`,
-                    Accept: 'application/x-ndjson',
-                },
-                timeout: 600000, // 10 minute timeout for exec
-            };
-            let stdout = '';
-            let stderr = '';
-            let exitCode = 0;
-            const req = httpModule.request(requestOptions, (res) => {
-                if (res.statusCode && res.statusCode >= 400) {
-                    let errorBody = '';
-                    res.on('data', (chunk) => {
-                        errorBody += chunk.toString();
-                    });
-                    res.on('end', () => {
-                        reject({
-                            message: `Request failed with status ${res.statusCode}: ${errorBody}`,
-                            status: res.statusCode,
-                        });
-                    });
-                    return;
-                }
-                res.on('data', (chunk) => {
-                    const lines = chunk.toString().split('\n').filter(Boolean);
-                    for (const line of lines) {
-                        try {
-                            const event = JSON.parse(line);
-                            if (event.type === 'stdout') {
-                                process.stdout.write(event.data);
-                                stdout += event.data;
-                            }
-                            else if (event.type === 'stderr') {
-                                process.stderr.write(event.data);
-                                stderr += event.data;
-                            }
-                            else if (event.type === 'exit') {
-                                exitCode = event.code;
-                            }
-                        }
-                        catch {
-                            // Not JSON, treat as raw output
-                            process.stdout.write(line);
-                            stdout += line;
-                        }
-                    }
-                });
-                res.on('end', () => {
-                    resolve({ exitCode, stdout, stderr });
-                });
-                res.on('error', reject);
-            });
-            req.on('error', reject);
-            req.on('timeout', () => {
-                req.destroy();
-                reject({ message: 'Request timeout', code: 'TIMEOUT' });
-            });
-            req.write(requestBody);
-            req.end();
+            path: `/sprites/${encodeURIComponent(spriteName)}`,
+            skipRetryOn404: true,
         });
     }
     /**
      * Delete a sprite by name
+     * DELETE /v1/sprites/{name}
+     * Returns 204 on success
      */
     async deleteSprite(spriteName) {
         await this.request({
             method: 'DELETE',
-            path: `/sprites/${spriteName}`,
+            path: `/sprites/${encodeURIComponent(spriteName)}`,
         });
         core.info(`Deleted sprite: ${spriteName}`);
     }
     /**
-     * List all sprites, optionally filtered by name prefix
+     * List sprites with optional prefix filter
+     * GET /v1/sprites?prefix={prefix}
      */
     async listSprites(namePrefix) {
         let path = '/sprites';
@@ -25892,7 +25776,107 @@ class SpritesClient {
         });
     }
     /**
+     * List checkpoints for a sprite
+     * GET /v1/sprites/{name}/checkpoints
+     */
+    async listCheckpoints(spriteName) {
+        return this.request({
+            method: 'GET',
+            path: `/sprites/${encodeURIComponent(spriteName)}/checkpoints`,
+        });
+    }
+    /**
+     * Get a specific checkpoint
+     * GET /v1/sprites/{name}/checkpoints/{checkpoint_id}
+     */
+    async getCheckpoint(spriteName, checkpointId) {
+        return this.request({
+            method: 'GET',
+            path: `/sprites/${encodeURIComponent(spriteName)}/checkpoints/${encodeURIComponent(checkpointId)}`,
+            skipRetryOn404: true,
+        });
+    }
+    /**
+     * Create a checkpoint
+     * POST /v1/sprites/{name}/checkpoint (singular!)
+     * Note: Returns streaming NDJSON but we only care about the final result
+     */
+    async createCheckpoint(options) {
+        // The API returns streaming NDJSON, but for simplicity we'll parse the complete event
+        // which contains the checkpoint ID
+        const response = await this.request({
+            method: 'POST',
+            path: `/sprites/${encodeURIComponent(options.spriteName)}/checkpoint`,
+            body: { comment: options.comment },
+        });
+        // Parse the checkpoint ID from the response
+        // The last line should be a "complete" event with data like "Checkpoint v8 created"
+        const lines = response.split('\n').filter((line) => line.trim());
+        const lastLine = lines[lines.length - 1];
+        if (lastLine) {
+            const event = JSON.parse(lastLine);
+            if (event.type === 'complete') {
+                // Extract checkpoint ID from message like "Checkpoint v8 created"
+                const match = event.data.match(/Checkpoint (\S+) created/);
+                const checkpointId = match ? match[1] : 'unknown';
+                core.info(`Created checkpoint: ${checkpointId}`);
+                return {
+                    id: checkpointId,
+                    create_time: event.time,
+                    comment: options.comment,
+                };
+            }
+        }
+        throw new Error('Failed to parse checkpoint creation response');
+    }
+    /**
+     * Restore from a checkpoint
+     * POST /v1/sprites/{name}/checkpoints/{checkpoint_id}/restore
+     * Returns streaming NDJSON
+     */
+    async restoreCheckpoint(spriteName, checkpointId) {
+        await this.request({
+            method: 'POST',
+            path: `/sprites/${encodeURIComponent(spriteName)}/checkpoints/${encodeURIComponent(checkpointId)}/restore`,
+        });
+        core.info(`Restored sprite ${spriteName} from checkpoint ${checkpointId}`);
+    }
+    /**
+     * Execute a command in a sprite
+     * POST /v1/sprites/{name}/exec?cmd={cmd}&dir={dir}
+     */
+    async exec(options) {
+        const { spriteName, command, workdir, env } = options;
+        core.info(`Executing command in sprite ${spriteName}`);
+        core.debug(`Command: ${command}`);
+        // Build query parameters
+        const params = new URLSearchParams();
+        params.append('cmd', command);
+        if (workdir) {
+            params.append('dir', workdir);
+        }
+        if (env) {
+            Object.entries(env).forEach(([key, value]) => {
+                params.append('env', `${key}=${value}`);
+            });
+        }
+        // Execute command and get result
+        const response = await this.request({
+            method: 'POST',
+            path: `/sprites/${encodeURIComponent(spriteName)}/exec?${params.toString()}`,
+        });
+        // Parse response - exact format depends on API
+        // For now, assuming a simple response format
+        return {
+            exitCode: response.exit_code || 0,
+            stdout: response.stdout || '',
+            stderr: response.stderr || '',
+        };
+    }
+    /**
      * Make an HTTP request with retry logic
+     * Retries on transient errors (5xx, 429, timeouts, network errors)
+     * Does NOT retry on 4xx errors (except 408, 429)
      */
     async request(options, retries = 0) {
         try {
@@ -25900,15 +25884,16 @@ class SpritesClient {
         }
         catch (error) {
             const apiError = error;
+            // Never retry 404 on specific GET requests
+            if (options.skipRetryOn404 && apiError.status === 404) {
+                throw error;
+            }
             // Check if error is retryable
-            if (retries < MAX_RETRIES &&
-                (TRANSIENT_ERROR_CODES.includes(apiError.status || 0) ||
-                    apiError.code === 'ECONNRESET' ||
-                    apiError.code === 'ETIMEDOUT' ||
-                    apiError.code === 'TIMEOUT')) {
+            const isTransientError = TRANSIENT_ERROR_CODES.includes(apiError.status || 0);
+            const isNetworkError = ['ECONNRESET', 'ETIMEDOUT', 'TIMEOUT', 'ENOTFOUND'].includes(apiError.code || '');
+            if (retries < MAX_RETRIES && (isTransientError || isNetworkError)) {
                 const delay = RETRY_DELAY_MS * Math.pow(2, retries);
-                core.warning(`Request failed (${apiError.status || apiError.code}: ${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`);
-                core.warning(JSON.stringify(apiError.req));
+                core.warning(`Request failed (${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`);
                 await this.sleep(delay);
                 return this.request(options, retries + 1);
             }
@@ -25934,7 +25919,7 @@ class SpritesClient {
                     Authorization: `Bearer ${this.token}`,
                     ...(requestBody && { 'Content-Length': Buffer.byteLength(requestBody) }),
                 },
-                timeout: options.timeout || DEFAULT_TIMEOUT,
+                timeout: DEFAULT_TIMEOUT,
             };
             const req = httpModule.request(requestOptions, (res) => {
                 let data = '';
@@ -25942,6 +25927,7 @@ class SpritesClient {
                     data += chunk.toString();
                 });
                 res.on('end', () => {
+                    // Handle error status codes
                     if (res.statusCode && res.statusCode >= 400) {
                         let message = `Request failed with status ${res.statusCode}`;
                         try {
@@ -25951,28 +25937,52 @@ class SpritesClient {
                         catch {
                             message = data || message;
                         }
-                        reject({ message, status: res.statusCode, req });
+                        reject({
+                            message,
+                            status: res.statusCode,
+                            req: {
+                                method: options.method,
+                                path: options.path,
+                            }
+                        });
                         return;
                     }
+                    // Handle empty response (like 204 No Content)
                     if (!data) {
                         resolve(undefined);
                         return;
                     }
+                    // Parse JSON response
                     try {
                         resolve(JSON.parse(data));
                     }
                     catch {
+                        // If not JSON, return as string
                         resolve(data);
                     }
                 });
                 res.on('error', reject);
             });
             req.on('error', (error) => {
-                reject({ message: error.message, code: error.code, req });
+                reject({
+                    message: error.message,
+                    code: error.code,
+                    req: {
+                        method: options.method,
+                        path: options.path,
+                    }
+                });
             });
             req.on('timeout', () => {
                 req.destroy();
-                reject({ message: 'Request timeout', code: 'TIMEOUT', req });
+                reject({
+                    message: 'Request timeout',
+                    code: 'TIMEOUT',
+                    req: {
+                        method: options.method,
+                        path: options.path,
+                    }
+                });
             });
             if (requestBody) {
                 req.write(requestBody);

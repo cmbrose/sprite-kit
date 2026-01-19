@@ -79,8 +79,8 @@ export async function run(
     // Create or get sprite
     const sprite = await client.createOrGetSprite({ name: spriteName });
 
-    // List existing checkpoints
-    const checkpoints = await client.listCheckpoints(sprite.id);
+    // List existing checkpoints (API uses sprite name, not ID)
+    const checkpoints = await client.listCheckpoints(spriteName);
     core.info(`Found ${checkpoints.length} existing checkpoints`);
 
     // Find last successful checkpoint for this job

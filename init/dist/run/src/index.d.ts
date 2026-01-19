@@ -18,7 +18,7 @@ export declare function shouldSkipStep(sprite: Sprite, runId: string, jobKey: st
 /**
  * Restore from checkpoint if needed
  */
-export declare function maybeRestore(sprite: Sprite, lastCheckpointId: string | undefined, runId: string, jobKey: string): Promise<boolean>;
+export declare function maybeRestore(sprite: Sprite, lastCheckpointId: string | undefined, runId: string, jobKey: string, stepKey: string): Promise<boolean>;
 /**
  * Main entry point for run action
  */

@@ -1,4 +1,4 @@
-import { Checkpoint } from '@fly/sprites';
+import { Checkpoint, Sprite } from '@fly/sprites';
 /**
  * Checkpoint comment format and parsing utilities
  */
@@ -30,7 +30,11 @@ export declare function findLastCheckpointForJob(checkpoints: Array<Checkpoint>,
  */
 export declare function findCheckpointForStep(checkpoints: Array<Checkpoint>, runId: string, jobKey: string, stepKey: string): string | null;
 /**
- * Process checkpoint data stream and returns the version id
+ * Create checkpoint and await completion
  */
-export declare function processCheckpointStream(stream: Response): Promise<string>;
+export declare function createCheckpoint(sprite: Sprite, comment: string): Promise<string>;
+/**
+ * Restore checkpoint and await completion
+ */
+export declare function restoreCheckpoint(sprite: Sprite, comment: string): Promise<string>;
 //# sourceMappingURL=checkpoint.d.ts.map

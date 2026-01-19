@@ -1,4 +1,4 @@
-import { Checkpoint } from '@fly/sprites';
+import { Checkpoint, Sprite } from '@fly/sprites';
 
 /**
  * Checkpoint comment format and parsing utilities
@@ -120,9 +120,11 @@ export function findCheckpointForStep(
 }
 
 /**
- * Process checkpoint data stream and returns the version id
+ * Create checkpoint and await completion
  */
-export async function processCheckpointStream(stream: Response): Promise<string> {
+export async function createCheckpoint(sprite: Sprite, comment: string): Promise<string> {
+    const response = await sprite.createCheckpoint(comment);
+
     /**
     [
         {
@@ -148,11 +150,11 @@ export async function processCheckpointStream(stream: Response): Promise<string>
     ]
     */
 
-    if (!stream.body) {
+    if (!response.body) {
         throw new Error('Stream body is null');
     }
 
-    const reader = stream.body.getReader();
+    const reader = response.body.getReader();
     const decoder = new TextDecoder();
 
     try {
@@ -173,6 +175,80 @@ export async function processCheckpointStream(stream: Response): Promise<string>
                     if (message.type === 'complete' && message.data) {
                         // Extract version from "Checkpoint v8 created" format
                         const match = message.data.match(/Checkpoint (v\d+) created/);
+                        if (match) {
+                            return match[1];
+                        }
+                    }
+                } catch (e) {
+                    // Skip invalid JSON lines
+                    continue;
+                }
+            }
+        }
+
+        throw new Error('No checkpoint version found in stream');
+    } finally {
+        reader.releaseLock();
+    }
+}
+
+
+/**
+ * Restore checkpoint and await completion
+ */
+export async function restoreCheckpoint(sprite: Sprite, comment: string): Promise<string> {
+    const response = await sprite.restoreCheckpoint(comment);
+
+    /**
+    [
+        {
+            "data": "Restoring to checkpoint v5...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Stopping services...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Restoring filesystem...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Restored to v5",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "complete"
+        }
+    ]
+    */
+
+    if (!response.body) {
+        throw new Error('Stream body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim());
+
+            for (const line of lines) {
+                try {
+                    const message = JSON.parse(line);
+
+                    if (message.type === 'complete' && message.data) {
+                        // Extract version from "Restored to v5" format
+                        const match = message.data.match(/Restored to (v\d+)/);
                         if (match) {
                             return match[1];
                         }

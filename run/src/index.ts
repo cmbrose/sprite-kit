@@ -5,7 +5,8 @@ import {
     findCheckpointForStep,
     parseCheckpointComment,
     RunInputs,
-    processCheckpointStream,
+    createCheckpoint,
+    restoreCheckpoint,
 } from '@sprite-kit/common';
 
 // Polyfill WebSocket for Node.js environment
@@ -87,7 +88,8 @@ export async function maybeRestore(
     sprite: Sprite,
     lastCheckpointId: string | undefined,
     runId: string,
-    jobKey: string
+    jobKey: string,
+    stepKey: string
 ): Promise<boolean> {
     if (!lastCheckpointId) {
         return false;
@@ -98,13 +100,13 @@ export async function maybeRestore(
         const checkpoint = await sprite.getCheckpoint(lastCheckpointId);
         const metadata = parseCheckpointComment(checkpoint.comment!);
 
-        if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey) {
-            core.warning('Checkpoint does not match current run/job, skipping restore');
+        if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey || metadata.stepKey !== stepKey) {
+            core.warning('Checkpoint does not match current run/job/step, skipping restore');
             return false;
         }
 
         core.info(`Restoring from checkpoint: ${lastCheckpointId}`);
-        await sprite.restoreCheckpoint(lastCheckpointId);
+        await restoreCheckpoint(sprite, lastCheckpointId);
         return true;
     } catch (error) {
         core.warning(`Failed to restore checkpoint: ${error}`);
@@ -136,7 +138,7 @@ export async function run(
         const sprite = await client.getSprite(spriteName!);
 
         // Restore from last checkpoint if this is a rerun (must happen before skip check)
-        restored = await maybeRestore(sprite, lastCheckpointId, runId, jobKey);
+        restored = await maybeRestore(sprite, lastCheckpointId, runId, jobKey, stepKey);
 
         // Check if step should be skipped
         const { skip, existingCheckpointId } = await shouldSkipStep(
@@ -182,8 +184,7 @@ export async function run(
 
         // Create checkpoint on success
         const comment = formatCheckpointComment({ runId, jobKey, stepKey });
-        const checkpointResponse = await sprite.createCheckpoint(comment);
-        checkpointId = await processCheckpointStream(checkpointResponse);
+        checkpointId = await createCheckpoint(sprite, comment);
 
         // Update environment for subsequent steps
         core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', checkpointId);

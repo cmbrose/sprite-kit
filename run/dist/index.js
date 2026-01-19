@@ -37755,9 +37755,10 @@ function findCheckpointForStep(checkpoints, runId, jobKey, stepKey) {
     return null;
 }
 /**
- * Process checkpoint data stream and returns the version id
+ * Create checkpoint and await completion
  */
-async function processCheckpointStream(stream) {
+async function createCheckpoint(sprite, comment) {
+    const response = await sprite.createCheckpoint(comment);
     /**
     [
         {
@@ -37782,10 +37783,10 @@ async function processCheckpointStream(stream) {
         }
     ]
     */
-    if (!stream.body) {
+    if (!response.body) {
         throw new Error('Stream body is null');
     }
-    const reader = stream.body.getReader();
+    const reader = response.body.getReader();
     const decoder = new TextDecoder();
     try {
         while (true) {
@@ -37801,6 +37802,71 @@ async function processCheckpointStream(stream) {
                     if (message.type === 'complete' && message.data) {
                         // Extract version from "Checkpoint v8 created" format
                         const match = message.data.match(/Checkpoint (v\d+) created/);
+                        if (match) {
+                            return match[1];
+                        }
+                    }
+                }
+                catch (e) {
+                    // Skip invalid JSON lines
+                    continue;
+                }
+            }
+        }
+        throw new Error('No checkpoint version found in stream');
+    }
+    finally {
+        reader.releaseLock();
+    }
+}
+/**
+ * Restore checkpoint and await completion
+ */
+async function restoreCheckpoint(sprite, comment) {
+    const response = await sprite.restoreCheckpoint(comment);
+    /**
+    [
+        {
+            "data": "Restoring to checkpoint v5...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Stopping services...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Restoring filesystem...",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "info"
+        },
+        {
+            "data": "Restored to v5",
+            "time": "2026-01-05T10:30:00Z",
+            "type": "complete"
+        }
+    ]
+    */
+    if (!response.body) {
+        throw new Error('Stream body is null');
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(line => line.trim());
+            for (const line of lines) {
+                try {
+                    const message = JSON.parse(line);
+                    if (message.type === 'complete' && message.data) {
+                        // Extract version from "Restored to v5" format
+                        const match = message.data.match(/Restored to (v\d+)/);
                         if (match) {
                             return match[1];
                         }
@@ -37889,7 +37955,7 @@ async function shouldSkipStep(sprite, runId, jobKey, stepKey) {
 /**
  * Restore from checkpoint if needed
  */
-async function maybeRestore(sprite, lastCheckpointId, runId, jobKey) {
+async function maybeRestore(sprite, lastCheckpointId, runId, jobKey, stepKey) {
     if (!lastCheckpointId) {
         return false;
     }
@@ -37897,12 +37963,12 @@ async function maybeRestore(sprite, lastCheckpointId, runId, jobKey) {
         // Verify checkpoint belongs to this run/job
         const checkpoint = await sprite.getCheckpoint(lastCheckpointId);
         const metadata = parseCheckpointComment(checkpoint.comment);
-        if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey) {
-            core.warning('Checkpoint does not match current run/job, skipping restore');
+        if (!metadata || metadata.runId !== runId || metadata.jobKey !== jobKey || metadata.stepKey !== stepKey) {
+            core.warning('Checkpoint does not match current run/job/step, skipping restore');
             return false;
         }
         core.info(`Restoring from checkpoint: ${lastCheckpointId}`);
-        await sprite.restoreCheckpoint(lastCheckpointId);
+        await restoreCheckpoint(sprite, lastCheckpointId);
         return true;
     }
     catch (error) {
@@ -37927,7 +37993,7 @@ async function run(inputsOverride) {
         core.info(`Sprite name: ${spriteName}`);
         const sprite = await client.getSprite(spriteName);
         // Restore from last checkpoint if this is a rerun (must happen before skip check)
-        restored = await maybeRestore(sprite, lastCheckpointId, runId, jobKey);
+        restored = await maybeRestore(sprite, lastCheckpointId, runId, jobKey, stepKey);
         // Check if step should be skipped
         const { skip, existingCheckpointId } = await shouldSkipStep(sprite, runId, jobKey, stepKey);
         if (skip && existingCheckpointId) {
@@ -37955,8 +38021,7 @@ async function run(inputsOverride) {
         core.endGroup();
         // Create checkpoint on success
         const comment = formatCheckpointComment({ runId, jobKey, stepKey });
-        const checkpointResponse = await sprite.createCheckpoint(comment);
-        checkpointId = await processCheckpointStream(checkpointResponse);
+        checkpointId = await createCheckpoint(sprite, comment);
         // Update environment for subsequent steps
         core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', checkpointId);
         core.info(`Step "${stepKey}" completed successfully`);

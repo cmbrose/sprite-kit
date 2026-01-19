@@ -24,26 +24,22 @@ jobs:
 
       # Initialize sprite for this job
       - name: Init Sprite
-        id: sprite
         uses: cmbrose/sprite-kit/init@v1
 
       # Each step gets checkpointed on success
       - name: Install Dependencies
         uses: cmbrose/sprite-kit/run@v1
         with:
-          step-key: install
           run: npm ci
 
       - name: Build
         uses: cmbrose/sprite-kit/run@v1
         with:
-          step-key: build
           run: npm run build
 
       - name: Test
         uses: cmbrose/sprite-kit/run@v1
         with:
-          step-key: test
           run: npm test
 
       # Clean up sprite after successful job completion
@@ -193,7 +189,6 @@ steps:
 
   - uses: cmbrose/sprite-kit/run@v1
     with:
-      step-key: my-step
       run: echo "Hello, World!"
 ```
 
@@ -216,7 +211,6 @@ jobs:
 
       - uses: cmbrose/sprite-kit/run@v1
         with:
-          step-key: install
           run: npm ci
 ```
 
@@ -227,7 +221,6 @@ Use YAML multi-line syntax for complex scripts:
 ```yaml
 - uses: cmbrose/sprite-kit/run@v1
   with:
-    step-key: setup
     run: |
       apt-get update
       apt-get install -y build-essential
@@ -243,7 +236,6 @@ Combine with GitHub Actions conditionals:
 - uses: cmbrose/sprite-kit/run@v1
   if: github.event_name == 'push'
   with:
-    step-key: deploy
     run: npm run deploy
 ```
 
@@ -254,7 +246,6 @@ Specify a working directory for command execution:
 ```yaml
 - uses: cmbrose/sprite-kit/run@v1
   with:
-    step-key: build-frontend
     workdir: /app/frontend
     run: npm run build
 ```
@@ -268,7 +259,6 @@ Access step outputs for conditional logic:
   id: build
   uses: cmbrose/sprite-kit/run@v1
   with:
-    step-key: build
     run: npm run build
 
 - name: Report
@@ -387,13 +377,11 @@ env:
 # Safe: Static commands
 - uses: cmbrose/sprite-kit/run@v1
   with:
-    step-key: build
     run: npm run build
 
 # Dangerous: User input in commands
 - uses: cmbrose/sprite-kit/run@v1
   with:
-    step-key: custom
     run: ${{ github.event.inputs.command }}  # Avoid this!
 ```
 

@@ -37818,6 +37818,9 @@ async function createCheckpoint(sprite, comment) {
                             return match[1];
                         }
                     }
+                    if (message.type === 'error') {
+                        throw new Error(`Checkpoint error: ${message.error}`);
+                    }
                 }
                 catch (e) {
                     // Skip invalid JSON lines
@@ -37877,12 +37880,11 @@ async function restoreCheckpoint(sprite, comment) {
                 core.debug("restore: " + line);
                 try {
                     const message = JSON.parse(line);
-                    if (message.type === 'complete' && message.data) {
-                        // Extract version from "Restored to v5" format
-                        const match = message.data.match(/Restored to (v\d+)/);
-                        if (match) {
-                            return match[1];
-                        }
+                    if (message.type === 'complete') {
+                        return;
+                    }
+                    if (message.type === 'error') {
+                        throw new Error(`Restore error: ${message.error}`);
                     }
                 }
                 catch (e) {

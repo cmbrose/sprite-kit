@@ -36,5 +36,5 @@ export declare function createCheckpoint(sprite: Sprite, comment: string): Promi
 /**
  * Restore checkpoint and await completion
  */
-export declare function restoreCheckpoint(sprite: Sprite, comment: string): Promise<string>;
+export declare function restoreCheckpoint(sprite: Sprite, comment: string): Promise<void>;
 //# sourceMappingURL=checkpoint.d.ts.map

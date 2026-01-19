@@ -180,6 +180,9 @@ export async function createCheckpoint(sprite: Sprite, comment: string): Promise
                             return match[1];
                         }
                     }
+                    if (message.type === 'error') {
+                        throw new Error(`Checkpoint error: ${message.error}`);
+                    }
                 } catch (e) {
                     // Skip invalid JSON lines
                     continue;
@@ -197,7 +200,7 @@ export async function createCheckpoint(sprite: Sprite, comment: string): Promise
 /**
  * Restore checkpoint and await completion
  */
-export async function restoreCheckpoint(sprite: Sprite, comment: string): Promise<string> {
+export async function restoreCheckpoint(sprite: Sprite, comment: string): Promise<void> {
     const response = await sprite.restoreCheckpoint(comment);
 
     /**
@@ -249,12 +252,11 @@ export async function restoreCheckpoint(sprite: Sprite, comment: string): Promis
                 try {
                     const message = JSON.parse(line);
 
-                    if (message.type === 'complete' && message.data) {
-                        // Extract version from "Restored to v5" format
-                        const match = message.data.match(/Restored to (v\d+)/);
-                        if (match) {
-                            return match[1];
-                        }
+                    if (message.type === 'complete') {
+                        return;
+                    }
+                    if (message.type === 'error') {
+                        throw new Error(`Restore error: ${message.error}`);
                     }
                 } catch (e) {
                     // Skip invalid JSON lines

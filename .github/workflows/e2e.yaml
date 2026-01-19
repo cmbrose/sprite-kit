@@ -240,7 +240,7 @@ jobs:
             if [ "${{ steps.step1.outputs.skipped }}" != "true" ]; then
               echo "ERROR: Step 1 was NOT skipped on retry - checkpoint restore failed"
               exit 1
-            fi`
+            fi
           fi
 
       # Step 2: Fails on first attempt, succeeds on retry

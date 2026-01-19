@@ -25908,6 +25908,7 @@ class SpritesClient {
                     apiError.code === 'TIMEOUT')) {
                 const delay = RETRY_DELAY_MS * Math.pow(2, retries);
                 core.warning(`Request failed (${apiError.status || apiError.code}: ${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`);
+                core.warning(JSON.stringify(apiError.req));
                 await this.sleep(delay);
                 return this.request(options, retries + 1);
             }
@@ -25950,7 +25951,7 @@ class SpritesClient {
                         catch {
                             message = data || message;
                         }
-                        reject({ message, status: res.statusCode });
+                        reject({ message, status: res.statusCode, req });
                         return;
                     }
                     if (!data) {
@@ -25967,11 +25968,11 @@ class SpritesClient {
                 res.on('error', reject);
             });
             req.on('error', (error) => {
-                reject({ message: error.message, code: error.code });
+                reject({ message: error.message, code: error.code, req });
             });
             req.on('timeout', () => {
                 req.destroy();
-                reject({ message: 'Request timeout', code: 'TIMEOUT' });
+                reject({ message: 'Request timeout', code: 'TIMEOUT', req });
             });
             if (requestBody) {
                 req.write(requestBody);

@@ -26,6 +26,8 @@ interface RequestOptions {
   body?: unknown;
   timeout?: number;
   stream?: boolean;
+  // Don't retry on 404 for GET requests to specific resources
+  skipRetryOn404?: boolean;
 }
 
 /**
@@ -76,6 +78,7 @@ export class SpritesClient {
       const sprite = await this.request<Sprite>({
         method: 'GET',
         path: `/sprites/${encodeURIComponent(name)}`,
+        skipRetryOn404: true,
       });
       return sprite;
     } catch (error) {
@@ -93,6 +96,7 @@ export class SpritesClient {
     return this.request<Sprite>({
       method: 'GET',
       path: `/sprites/${spriteId}`,
+      skipRetryOn404: true,
     });
   }
 
@@ -113,6 +117,7 @@ export class SpritesClient {
     return this.request<Checkpoint>({
       method: 'GET',
       path: `/sprites/${spriteId}/checkpoints/${checkpointId}`,
+      skipRetryOn404: true,
     });
   }
 
@@ -252,6 +257,11 @@ export class SpritesClient {
       return await this.doRequest<T>(options);
     } catch (error) {
       const apiError = error as ApiError;
+
+      // Don't retry 404 on GET requests to specific resources
+      if (options.skipRetryOn404 && apiError.status === 404) {
+        throw error;
+      }
 
       // Check if error is retryable
       if (

@@ -353,6 +353,35 @@ describe('SpritesClient', () => {
       // Should not have called warning (no retry)
       expect(core.warning).not.toHaveBeenCalled();
     });
+
+    it('should not retry on 404 error for GET sprite by name', async () => {
+      nock(API_URL)
+        .get('/sprites/nonexistent-sprite')
+        .reply(404, { message: 'Sprite not found' });
+
+      const client = new SpritesClient(TOKEN);
+
+      const result = await client.getSpriteByName('nonexistent-sprite');
+
+      expect(result).toBeNull();
+      // Should not have called warning (no retry)
+      expect(core.warning).not.toHaveBeenCalled();
+    });
+
+    it('should not retry on 404 error for GET sprite by ID', async () => {
+      nock(API_URL)
+        .get('/sprites/sprite-404')
+        .reply(404, { message: 'Sprite not found' });
+
+      const client = new SpritesClient(TOKEN);
+
+      await expect(client.getSprite('sprite-404')).rejects.toMatchObject({
+        status: 404,
+      });
+
+      // Should not have called warning (no retry)
+      expect(core.warning).not.toHaveBeenCalled();
+    });
   });
 
   describe('exec', () => {

@@ -30015,6 +30015,7 @@ class SpritesClient {
             const sprite = await this.request({
                 method: 'GET',
                 path: `/sprites/${encodeURIComponent(name)}`,
+                skipRetryOn404: true,
             });
             return sprite;
         }
@@ -30032,6 +30033,7 @@ class SpritesClient {
         return this.request({
             method: 'GET',
             path: `/sprites/${spriteId}`,
+            skipRetryOn404: true,
         });
     }
     /**
@@ -30050,6 +30052,7 @@ class SpritesClient {
         return this.request({
             method: 'GET',
             path: `/sprites/${spriteId}/checkpoints/${checkpointId}`,
+            skipRetryOn404: true,
         });
     }
     /**
@@ -30174,6 +30177,10 @@ class SpritesClient {
         }
         catch (error) {
             const apiError = error;
+            // Don't retry 404 on GET requests to specific resources
+            if (options.skipRetryOn404 && apiError.status === 404) {
+                throw error;
+            }
             // Check if error is retryable
             if (retries < MAX_RETRIES &&
                 (TRANSIENT_ERROR_CODES.includes(apiError.status || 0) ||

@@ -84,6 +84,7 @@ export interface ApiError {
     message: string;
     code?: string;
     status?: number;
+    req: any;
 }
 /**
  * GitHub context for identity derivation

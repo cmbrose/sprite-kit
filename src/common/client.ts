@@ -273,6 +273,7 @@ export class SpritesClient {
         core.warning(
           `Request failed (${apiError.status || apiError.code}: ${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`
         );
+        core.warning(JSON.stringify(apiError.req));
         await this.sleep(delay);
         return this.request<T>(options, retries + 1);
       }
@@ -320,7 +321,7 @@ export class SpritesClient {
             } catch {
               message = data || message;
             }
-            reject({ message, status: res.statusCode } as ApiError);
+            reject({ message, status: res.statusCode, req } as ApiError);
             return;
           }
 
@@ -340,12 +341,12 @@ export class SpritesClient {
       });
 
       req.on('error', (error: NodeJS.ErrnoException) => {
-        reject({ message: error.message, code: error.code } as ApiError);
+        reject({ message: error.message, code: error.code, req } as ApiError);
       });
 
       req.on('timeout', () => {
         req.destroy();
-        reject({ message: 'Request timeout', code: 'TIMEOUT' } as ApiError);
+        reject({ message: 'Request timeout', code: 'TIMEOUT', req } as ApiError);
       });
 
       if (requestBody) {

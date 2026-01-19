@@ -72,8 +72,8 @@ jobs:
             echo "🔧 Setting up Node.js v22.21.1 using nvm..."
             
             # Install and use Node.js v22.21.1 via nvm
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-            export NVM_DIR="$HOME/.nvm"
+            # Sprites has a sneaky nvm installation, which seems to break standard nvm installs, so we have to use it...
+            export NVM_DIR="/.sprite/languages/node/nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             
             nvm install 22.21.1

@@ -15,7 +15,6 @@ jobs:
   basic-workflow:
     name: Basic Workflow
     runs-on: ubuntu-latest
-    if: ${{ env.SPRITES_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +79,6 @@ jobs:
   matrix-workflow:
     name: Matrix Workflow
     runs-on: ubuntu-latest
-    if: ${{ env.SPRITES_TOKEN != '' }}
     strategy:
       matrix:
         variant: [a, b]
@@ -119,7 +117,6 @@ jobs:
   workdir-test:
     name: Workdir Test
     runs-on: ubuntu-latest
-    if: ${{ env.SPRITES_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -152,7 +149,6 @@ jobs:
   error-handling:
     name: Error Handling
     runs-on: ubuntu-latest
-    if: ${{ env.SPRITES_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -196,7 +192,6 @@ jobs:
   retry-smoke-test:
     name: Retry Smoke Test
     runs-on: ubuntu-latest
-    if: ${{ env.SPRITES_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -302,7 +297,6 @@ jobs:
   cleanup-test:
     name: Cleanup Action Test
     runs-on: ubuntu-latest
-    if: ${{ env.SPRITES_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 

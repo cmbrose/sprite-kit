@@ -32939,12 +32939,12 @@ async function run(ghContext) {
         core.setOutput('run-id', runId);
         core.setOutput('last-checkpoint-id', lastCheckpointId || '');
         core.setOutput('needs-restore', needsRestore.toString());
-        // Export state for run action
-        core.saveState('sprite-id', sprite.id);
-        core.saveState('sprite-name', sprite.name);
-        core.saveState('job-key', jobKey);
-        core.saveState('run-id', runId);
-        core.saveState('last-checkpoint-id', lastCheckpointId || '');
+        // Set environment variables for subsequent steps in the same job
+        core.exportVariable('SPRITE_ID', sprite.id);
+        core.exportVariable('SPRITE_NAME', sprite.name);
+        core.exportVariable('SPRITE_JOB_KEY', jobKey);
+        core.exportVariable('SPRITE_RUN_ID', runId);
+        core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', lastCheckpointId || '');
         core.info('Init action completed successfully');
     }
     catch (error) {

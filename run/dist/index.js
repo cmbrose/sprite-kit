@@ -32855,10 +32855,10 @@ function getInputs() {
         run: core.getInput('run', { required: true }),
         token: core.getInput('token') || process.env.SPRITES_TOKEN,
         apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
-        spriteName: core.getInput('sprite-name') || core.getState('sprite-name'),
-        jobKey: core.getInput('job-key') || core.getState('job-key'),
-        runId: core.getInput('run-id') || core.getState('run-id'),
-        lastCheckpointId: core.getInput('last-checkpoint-id') || core.getState('last-checkpoint-id'),
+        spriteName: core.getInput('sprite-name') || process.env.SPRITE_NAME,
+        jobKey: core.getInput('job-key') || process.env.SPRITE_JOB_KEY,
+        runId: core.getInput('run-id') || process.env.SPRITE_RUN_ID,
+        lastCheckpointId: core.getInput('last-checkpoint-id') || process.env.SPRITE_LAST_CHECKPOINT_ID,
         workdir: core.getInput('workdir'),
     };
 }
@@ -32878,6 +32878,7 @@ function validateInputs(inputs) {
     if (!inputs.runId) {
         throw new Error('Run ID is required. Run init action first or provide run-id input.');
     }
+    return inputs;
 }
 /**
  * Check if step should be skipped based on existing checkpoint
@@ -32923,8 +32924,8 @@ async function run(inputsOverride) {
     let checkpointId = '';
     let exitCode = 0;
     try {
-        const inputs = { ...getInputs(), ...inputsOverride };
-        validateInputs(inputs);
+        const maybeInputs = { ...getInputs(), ...inputsOverride };
+        const inputs = validateInputs(maybeInputs);
         const client = new SpritesClient(inputs.token, { baseURL: inputs.apiUrl });
         const { spriteName, runId, jobKey, stepKey, lastCheckpointId } = inputs;
         core.info(`Step key: ${stepKey}`);
@@ -32961,8 +32962,8 @@ async function run(inputsOverride) {
         const comment = formatCheckpointComment({ runId, jobKey, stepKey });
         const checkpointResponse = await sprite.createCheckpoint(comment);
         checkpointId = await processCheckpointStream(checkpointResponse);
-        // Update state for subsequent steps
-        core.saveState('last-checkpoint-id', checkpointId);
+        // Update environment for subsequent steps
+        core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', checkpointId);
         core.info(`Step "${stepKey}" completed successfully`);
     }
     catch (error) {

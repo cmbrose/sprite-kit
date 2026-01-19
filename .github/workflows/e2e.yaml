@@ -25,13 +25,13 @@ jobs:
       - name: Verify init outputs
         run: |
           echo "Sprite Name: ${{ steps.init.outputs.sprite-name }}"
-          echo "Sprite ID: ${{ steps.init.outputs.sprite-name }}"
+          echo "Sprite ID: ${{ steps.init.outputs.sprite-id }}"
           echo "Job Key: ${{ steps.init.outputs.job-key }}"
           echo "Run ID: ${{ steps.init.outputs.run-id }}"
 
           # Verify outputs are set
           test -n "${{ steps.init.outputs.sprite-name }}" || exit 1
-          test -n "${{ steps.init.outputs.sprite-name }}" || exit 1
+          test -n "${{ steps.init.outputs.sprite-id }}" || exit 1
           test -n "${{ steps.init.outputs.job-key }}" || exit 1
           test -n "${{ steps.init.outputs.run-id }}" || exit 1
 

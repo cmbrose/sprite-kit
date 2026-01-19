@@ -3,11 +3,11 @@ import { RunInputs } from '@sprite-kit/common';
 /**
  * Get inputs for the run action
  */
-export declare function getInputs(): RunInputs;
+export declare function getInputs(): Partial<RunInputs>;
 /**
  * Validate required inputs
  */
-export declare function validateInputs(inputs: RunInputs): void;
+export declare function validateInputs(inputs: Partial<RunInputs>): RunInputs;
 /**
  * Check if step should be skipped based on existing checkpoint
  */

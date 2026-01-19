@@ -35269,11 +35269,11 @@ function getInputs() {
     const maxAgeInput = core.getInput('max-age') || '24';
     const dryRunInput = core.getInput('dry-run') || 'false';
     const modeInput = core.getInput('mode') || 'global';
-    // If mode is current or if we have state but no explicit inputs, use current mode
-    const spriteNameFromState = core.getState('sprite-name');
-    // Auto-detect mode: if we have state data and no explicit global inputs, use current mode
+    // If mode is current or if we have environment data but no explicit inputs, use current mode
+    const spriteNameFromEnv = process.env.SPRITE_NAME;
+    // Auto-detect mode: if we have environment data and no explicit global inputs, use current mode
     const mode = modeInput ||
-        (spriteNameFromState && !core.getInput('sprite-prefix') && !core.getInput('max-age') ? 'current' : 'global');
+        (spriteNameFromEnv && !core.getInput('sprite-prefix') && !core.getInput('max-age') ? 'current' : 'global');
     return {
         token: core.getInput('token') || process.env.SPRITES_TOKEN,
         apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
@@ -35281,7 +35281,7 @@ function getInputs() {
         dryRun: dryRunInput.toLowerCase() === 'true',
         spritePrefix: core.getInput('sprite-prefix'),
         mode,
-        spriteName: core.getInput('sprite-name') || spriteNameFromState,
+        spriteName: core.getInput('sprite-name') || spriteNameFromEnv,
     };
 }
 /**
@@ -35307,7 +35307,7 @@ function validateInputs(inputs) {
  */
 function getDefaultSpritePrefix() {
     const context = github.context;
-    return `${context.repo.owner}-${context.repo.repo}`;
+    return `gh-${context.repo.owner}-${context.repo.repo}-`;
 }
 /**
  * Check if a sprite is old enough to be cleaned up

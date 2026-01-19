@@ -11,16 +11,16 @@ import {
 /**
  * Get inputs for the run action
  */
-export function getInputs(): RunInputs {
+export function getInputs(): Partial<RunInputs> {
     return {
         stepKey: core.getInput('step-key', { required: true }),
         run: core.getInput('run', { required: true }),
         token: core.getInput('token') || process.env.SPRITES_TOKEN,
         apiUrl: core.getInput('api-url') || process.env.SPRITES_API_URL,
-        spriteName: core.getInput('sprite-name') || core.getState('sprite-name'),
-        jobKey: core.getInput('job-key') || core.getState('job-key'),
-        runId: core.getInput('run-id') || core.getState('run-id'),
-        lastCheckpointId: core.getInput('last-checkpoint-id') || core.getState('last-checkpoint-id'),
+        spriteName: core.getInput('sprite-name') || process.env.SPRITE_NAME,
+        jobKey: core.getInput('job-key') || process.env.SPRITE_JOB_KEY,
+        runId: core.getInput('run-id') || process.env.SPRITE_RUN_ID,
+        lastCheckpointId: core.getInput('last-checkpoint-id') || process.env.SPRITE_LAST_CHECKPOINT_ID,
         workdir: core.getInput('workdir'),
     };
 }
@@ -28,7 +28,7 @@ export function getInputs(): RunInputs {
 /**
  * Validate required inputs
  */
-export function validateInputs(inputs: RunInputs): void {
+export function validateInputs(inputs: Partial<RunInputs>): RunInputs {
     if (!inputs.token) {
         throw new Error(
             'Sprites token is required. Set SPRITES_TOKEN environment variable or provide token input.'
@@ -49,6 +49,7 @@ export function validateInputs(inputs: RunInputs): void {
             'Run ID is required. Run init action first or provide run-id input.'
         );
     }
+    return inputs as RunInputs;
 }
 
 /**
@@ -113,8 +114,8 @@ export async function run(
     let exitCode = 0;
 
     try {
-        const inputs = { ...getInputs(), ...inputsOverride };
-        validateInputs(inputs);
+        const maybeInputs = { ...getInputs(), ...inputsOverride };
+        const inputs = validateInputs(maybeInputs);
 
         const client = new SpritesClient(inputs.token!, { baseURL: inputs.apiUrl });
         const { spriteName, runId, jobKey, stepKey, lastCheckpointId } = inputs;
@@ -169,8 +170,8 @@ export async function run(
         const checkpointResponse = await sprite.createCheckpoint(comment);
         checkpointId = await processCheckpointStream(checkpointResponse);
 
-        // Update state for subsequent steps
-        core.saveState('last-checkpoint-id', checkpointId);
+        // Update environment for subsequent steps
+        core.exportVariable('SPRITE_LAST_CHECKPOINT_ID', checkpointId);
 
         core.info(`Step "${stepKey}" completed successfully`);
     } catch (error) {

@@ -29,19 +29,6 @@ jobs:
       - name: 🚀 Initialize Sprite
         uses: ./init
 
-      - name: 📊 Show Sprite Info
-        run: |
-          echo "🎯 Sprite Name: ${{ steps.init.outputs.sprite-name }}"
-          echo "🔑 Job Key: ${{ steps.init.outputs.job-key }}"
-          echo "🆔 Run ID: ${{ steps.init.outputs.run-id }}"
-          echo "🔄 Needs Restore: ${{ steps.init.outputs.needs-restore }}"
-          
-          if [ "${{ steps.init.outputs.needs-restore }}" = "true" ]; then
-            echo "✨ This is a retry! The sprite will restore previous progress."
-          else
-            echo "🆕 This is a fresh run. Building from scratch."
-          fi
-
       - name: 📥 Clone VSCode Repository
         uses: ./run
         with:

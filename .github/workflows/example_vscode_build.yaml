@@ -168,12 +168,7 @@ jobs:
             
             # Run a subset of fast tests
             echo "🏃‍♂️ Running unit tests..."
-            npm run test:unit -- --grep "basic" --timeout 30000 || true
-            
-            # Just check that critical files exist
-            echo "🔍 Verifying build artifacts..."
-            test -f "out/bootstrap.js" || { echo "❌ Bootstrap not found"; exit 1; }
-            test -d "out/vs" || { echo "❌ VS directory not found"; exit 1; }
+            npm run test-node
             
             echo "✅ Basic tests completed!"
 

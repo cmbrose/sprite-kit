@@ -30186,7 +30186,7 @@ class SpritesClient {
                     apiError.code === 'ETIMEDOUT' ||
                     apiError.code === 'TIMEOUT')) {
                 const delay = RETRY_DELAY_MS * Math.pow(2, retries);
-                core.warning(`Request failed (${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`);
+                core.warning(`Request failed (${apiError.status || apiError.code}: ${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`);
                 await this.sleep(delay);
                 return this.request(options, retries + 1);
             }

@@ -271,7 +271,7 @@ export class SpritesClient {
       ) {
         const delay = RETRY_DELAY_MS * Math.pow(2, retries);
         core.warning(
-          `Request failed (${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`
+          `Request failed (${apiError.status || apiError.code}: ${apiError.message}), retrying in ${delay}ms (attempt ${retries + 1}/${MAX_RETRIES})`
         );
         await this.sleep(delay);
         return this.request<T>(options, retries + 1);

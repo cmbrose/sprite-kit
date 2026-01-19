@@ -37939,31 +37939,32 @@ async function run(inputsOverride) {
         // Execute the command
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running command:`);
-        const result = sprite.spawn('/bin/bash', [], {
-            tty: true,
+        const command = sprite.spawn('/bin/bash', [], {
             cwd: inputs.workdir,
         });
+        command.stdout.on('data', (data) => {
+            core.info("out: " + data.toString());
+        });
+        command.stderr.on('data', (data) => {
+            core.error("err: " + data.toString());
+        });
+        let exitCodePromise = new Promise((resolve, reject) => {
+            command.on('exit', (code) => {
+                resolve(code);
+            });
+            command.on('error', (err) => {
+                reject(err);
+            });
+        });
+        await command.start();
         try {
-            result.stdin.write(inputs.run + '\n');
-            result.stdin.end();
+            command.stdin.write(inputs.run + '\n');
+            command.stdin.end();
         }
         catch (error) {
             core.warning(`Failed to write to stdin: ${error}`);
         }
-        result.stdout.on('data', (data) => {
-            core.info("out: " + data.toString());
-        });
-        result.stderr.on('data', (data) => {
-            core.error("err: " + data.toString());
-        });
-        let exitCode = await new Promise((resolve, reject) => {
-            result.on('exit', (code) => {
-                resolve(code);
-            });
-            result.on('error', (err) => {
-                reject(err);
-            });
-        });
+        exitCode = await exitCodePromise;
         if (exitCode !== 0) {
             throw new Error(`Command exited with code ${exitCode}`);
         }

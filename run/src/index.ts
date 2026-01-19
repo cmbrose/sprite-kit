@@ -172,21 +172,12 @@ export async function run(
             core.error("err: " + data.toString());
         });
 
-        let exitCodePromise = new Promise<number>((resolve, reject) => {
-            command.on('exit', (code: number) => {
-                resolve(code);
-            });
-            command.on('error', (err: Error) => {
-                reject(err);
-            });
-        });
-
         command.on('spawn', () => {
             command.stdin.write(inputs.run + '\n');
             command.stdin.end();
         });
 
-        exitCode = await exitCodePromise;
+        exitCode = await command.wait();
 
         if (exitCode !== 0) {
             throw new Error(`Command exited with code ${exitCode}`);

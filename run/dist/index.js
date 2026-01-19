@@ -37948,19 +37948,11 @@ async function run(inputsOverride) {
         command.stderr.on('data', (data) => {
             core.error("err: " + data.toString());
         });
-        let exitCodePromise = new Promise((resolve, reject) => {
-            command.on('exit', (code) => {
-                resolve(code);
-            });
-            command.on('error', (err) => {
-                reject(err);
-            });
-        });
         command.on('spawn', () => {
             command.stdin.write(inputs.run + '\n');
             command.stdin.end();
         });
-        exitCode = await exitCodePromise;
+        exitCode = await command.wait();
         if (exitCode !== 0) {
             throw new Error(`Command exited with code ${exitCode}`);
         }

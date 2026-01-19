@@ -1,4 +1,4 @@
-name: Example - Large Scale VSCode Build
+name: Example - VSCode Build
 
 on:
   workflow_dispatch:
@@ -70,7 +70,6 @@ jobs:
             # Simulate failure if requested
             if [ "${{ github.event.inputs.force_failure_step }}" = "setup" ] && [ "${{ github.run_attempt }}" = "1" ]; then
               echo "💥 SIMULATED FAILURE: Setup failing on first attempt (as requested)"
-              echo "🔄 On retry, this step will be skipped entirely due to checkpointing!"
               exit 1
             fi
             
@@ -94,7 +93,6 @@ jobs:
             # Simulate failure if requested
             if [ "${{ github.event.inputs.force_failure_step }}" = "build" ] && [ "${{ github.run_attempt }}" = "1" ]; then
               echo "💥 SIMULATED FAILURE: Build failing on first attempt (as requested)"
-              echo "🔄 On retry, setup steps will be skipped and build will retry!"
               exit 1
             fi
             
@@ -119,7 +117,6 @@ jobs:
             # Simulate failure if requested
             if [ "${{ github.event.inputs.force_failure_step }}" = "test" ] && [ "${{ github.run_attempt }}" = "1" ]; then
               echo "💥 SIMULATED FAILURE: Tests failing on first attempt (as requested)"
-              echo "🔄 On retry, all previous steps will be skipped and only tests will re-run!"
               exit 1
             fi
             

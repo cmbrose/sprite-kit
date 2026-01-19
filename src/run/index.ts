@@ -161,8 +161,14 @@ export async function run(
         core.info(`Executing step: ${stepKey}`);
         core.startGroup(`Running command:`);
 
+        // The cwd needs to be rooted, so if a relative path is provided, we root it to /home/sprite/
+        let cwd = inputs.workdir;
+        if (cwd?.startsWith('/') === false) {
+            cwd = `/home/sprite/${cwd}`;
+        }
+
         const command = sprite.spawn('/bin/bash', ['-c', inputs.run], {
-            cwd: inputs.workdir,
+            cwd,
         });
 
         command.stdout.on('data', (data: Buffer) => {
@@ -170,7 +176,7 @@ export async function run(
         });
 
         command.stderr.on('data', (data: Buffer) => {
-            core.error(data.toString());
+            core.info(data.toString());
         });
 
         exitCode = await command.wait();

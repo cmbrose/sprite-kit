@@ -1,0 +1,13 @@
+{
+    "name": "@sprite-kit/common",
+    "version": "1.0.0",
+    "description": "Shared utilities for sprite-kit actions",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {},
+    "dependencies": {
+        "@actions/github": "^6.0.0",
+        "@fly/sprites": "*"
+    },
+    "devDependencies": {}
+}

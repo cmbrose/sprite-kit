@@ -1,0 +1,39 @@
+name: 'Sprite Init'
+description: 'Initialize Sprite for persistent CI steps with checkpointing'
+author: 'cmbrose'
+
+branding:
+  icon: 'box'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'Sprites API token. If not provided, uses SPRITES_TOKEN environment variable.'
+    required: false
+  api-url:
+    description: 'Sprites API URL. Defaults to https://api.sprites.dev'
+    required: false
+  job-key:
+    description: 'Custom job key for checkpoint matching. If not provided, derived from GitHub context.'
+    required: false
+  matrix:
+    description: 'JSON string of matrix values for unique sprite identification in matrix jobs.'
+    required: false
+
+outputs:
+  sprite-name:
+    description: 'The deterministic sprite name derived from GitHub context'
+  sprite-id:
+    description: 'The unique ID of the created or retrieved sprite'
+  job-key:
+    description: 'The job key used for checkpoint matching'
+  run-id:
+    description: 'The GitHub run ID'
+  last-checkpoint-id:
+    description: 'ID of the last successful checkpoint for this job, if any'
+  needs-restore:
+    description: 'Whether a restore from checkpoint is needed (true/false)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

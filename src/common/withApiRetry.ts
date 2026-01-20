@@ -8,21 +8,22 @@ export async function withApiRetry<T>(
     let attempt = 0;
 
     while (true) {
+        attempt++;
+
         try {
             return await fn();
         } catch (error) {
             const err = error as { response?: { status?: number } };
             if (err.response && err.response.status && err.response.status >= 500) {
-                if (attempt <= retries) {
-                    core.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
-                    attempt++;
-                }
-            }
+                core.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+                await new Promise(resolve => setTimeout(resolve, attempt * delayMs));
 
-            if (attempt > retries) {
+                if (attempt > retries) {
+                    throw error;
+                }
+            } else {
                 throw error;
             }
-            await new Promise(resolve => setTimeout(resolve, attempt * delayMs));
         }
     }
 }

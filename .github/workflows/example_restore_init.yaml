@@ -13,11 +13,11 @@ jobs:
     steps:
       - name: Init Sprite
         id: init
-        uses: cmbrose/sprite-kit/init@v1.0.3
+        uses: cmbrose/sprite-kit/init@v1.0.4
 
       - name: Step 1 - Create bad file and fail first attempt
         id: step1
-        uses: cmbrose/sprite-kit/run@v1.0.3
+        uses: cmbrose/sprite-kit/run@v1.0.4
         with:
           step-key: echo-test
           run: |
@@ -32,7 +32,7 @@ jobs:
 
       - name: Step 2 - Verify bad file is gone on retry
         id: step2
-        uses: cmbrose/sprite-kit/run@v1.0.3
+        uses: cmbrose/sprite-kit/run@v1.0.4
         with:
           step-key: verify-bad-file
           run: |
@@ -44,5 +44,5 @@ jobs:
             echo "bad-file does not exist, restore to v0 checkpoint succeeded."
 
       - name: Cleanup Sprite
-        if: always()
-        uses: cmbrose/sprite-kit/clean@v1.0.3
+        if: success()
+        uses: cmbrose/sprite-kit/clean@v1.0.4

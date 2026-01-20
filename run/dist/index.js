@@ -28425,20 +28425,20 @@ var core2 = __toESM(require_core());
 async function withApiRetry(fn, retries = 2, delayMs = 1e3) {
   let attempt = 0;
   while (true) {
+    attempt++;
     try {
       return await fn();
     } catch (error) {
       const err = error;
       if (err.response && err.response.status && err.response.status >= 500) {
-        if (attempt <= retries) {
-          core2.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
-          attempt++;
+        core2.warning(`API call failed due to server error, retrying... (${retries - attempt} retries left)`);
+        await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
+        if (attempt > retries) {
+          throw error;
         }
-      }
-      if (attempt > retries) {
+      } else {
         throw error;
       }
-      await new Promise((resolve) => setTimeout(resolve, attempt * delayMs));
     }
   }
 }
